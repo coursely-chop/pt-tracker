@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
-import { formatLoad } from "../lib/format";
+import { formatLoad, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
 import type { BandLoad, ExerciseTarget, Load, ProgressionEntry, RepsTarget, SideTarget } from "../types";
 
 const WEIGHT_STEP = 2.5;
 const REPS_STEP = 1;
 const BAND_COLORS = ["yellow", "green", "blue", "black", "red"];
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function cloneLoad(load: Load): Load {
   return JSON.parse(JSON.stringify(load));

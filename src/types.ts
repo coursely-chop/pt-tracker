@@ -114,7 +114,16 @@ export interface Workout {
   supersets: Superset[];
 }
 
+/** "I did this workout today" — a timestamp, nothing more. Distinct from
+ * per-exercise progression: this tracks that a workout happened, not what
+ * happened inside it. */
+export interface WorkoutCompletion {
+  workoutId: string;
+  date: string;
+}
+
 export interface SeedData {
   exercises: Exercise[];
   workouts: Workout[];
+  completions: WorkoutCompletion[];
 }

@@ -129,14 +129,14 @@ Neither requires data entry beyond what you'd naturally do (adjust a weight, tap
 
 Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 
-- New entity, still not implemented: **workout completions** — `{ workoutId, date }`.
+- **Resolved:** **workout completions** — `{ workoutId, date }`, a new top-level `completions[]` array. See `DATA_MODEL.md`.
 - New entity, still not implemented: **notes** — `{ id, exerciseId, text, createdAt, pinned }`.
 - **Resolved:** `target.reps` is now `number | RepRange`, so a working-set target can be a fixed count (15) or a live range (12-15), distinct from the exercise's general `repRange` metadata. See `DATA_MODEL.md`.
 - "Next movement" navigation is computable from `workouts[].supersets[].slots[]` ordering — implemented, no schema change was needed.
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
 
-**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, and Edit Mode (§3-5) — all reading/writing through `localStorage`, wired end to end. Log Workout, Notes, History, Create New Home Workout, and Edit Exercise Details are still just this brief.
+**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, and Log Workout (§3-5, §8) — all reading/writing through `localStorage`, wired end to end. Notes, History, Create New Home Workout, and Edit Exercise Details are still just this brief.
 
 ## Home equipment
 

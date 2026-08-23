@@ -1,13 +1,16 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { loadData, saveExercise } from "./storage";
-import type { Exercise, ExerciseTarget, ProgressionEntry, SeedData, Workout } from "../types";
+import { loadData, saveCompletion, saveExercise } from "./storage";
+import { todayISO } from "./format";
+import type { Exercise, ExerciseTarget, ProgressionEntry, SeedData, Workout, WorkoutCompletion } from "../types";
 
 interface DataContextValue {
   exercises: Exercise[];
   workouts: Workout[];
+  completions: WorkoutCompletion[];
   getExercise: (id: string) => Exercise | undefined;
   getWorkout: (id: string) => Workout | undefined;
   updateExerciseTarget: (exerciseId: string, newTarget: ExerciseTarget, newEntries: ProgressionEntry[]) => void;
+  logWorkout: (workoutId: string) => void;
   editingExerciseId: string | null;
   openEditMode: (exerciseId: string) => void;
   closeEditMode: () => void;
@@ -33,12 +36,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveExercise(updated));
   }
 
+  function logWorkout(workoutId: string) {
+    setData(saveCompletion({ workoutId, date: todayISO() }));
+  }
+
   const value: DataContextValue = {
     exercises: data.exercises,
     workouts: data.workouts,
+    completions: data.completions,
     getExercise,
     getWorkout,
     updateExerciseTarget,
+    logWorkout,
     editingExerciseId,
     openEditMode: setEditingExerciseId,
     closeEditMode: () => setEditingExerciseId(null),

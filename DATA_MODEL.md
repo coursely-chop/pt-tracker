@@ -119,6 +119,18 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 
 `slots[].exerciseIds` is an array (not a single id) specifically to support the tricep-extension/kick-back alternate without special-casing it.
 
+## `completions[]`
+
+The "Log Workout" action's entire write — one entry per tap, nothing more:
+
+```
+{ workoutId: string, date: "YYYY-MM-DD" }
+```
+
+Deliberately separate from `exercises[].progression[]`: this tracks *that* a workout happened, not what happened inside it. "Last completed" on the Workout List is just the max date across a workout's entries — no separate "last completed" field to keep in sync, it's derived (`lib/completions.ts`).
+
+Since this field didn't exist when earlier `localStorage` snapshots were written, `loadData()` defaults it to `[]` for anyone with pre-existing data rather than assuming it's always present — the only field so far that's needed this kind of migration handling.
+
 ## What this app is, on purpose
 
 - A **reminder**: what exercises, in what order, what weight/band, what form cues — not a workout logger you have to check in with every time.

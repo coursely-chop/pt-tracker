@@ -1,11 +1,14 @@
-import { Link, useParams } from "react-router-dom";
-import { formatWarmupLine, formatWorkingLine } from "../lib/format";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { formatDate, formatWarmupLine, formatWorkingLine, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 export default function WorkoutOverview() {
   const { workoutId } = useParams<{ workoutId: string }>();
-  const { getExercise, getWorkout, openEditMode } = useData();
+  const navigate = useNavigate();
+  const { getExercise, getWorkout, openEditMode, logWorkout } = useData();
   const workout = workoutId ? getWorkout(workoutId) : undefined;
+  const [armed, setArmed] = useState(false);
 
   if (!workout) {
     return (
@@ -20,6 +23,12 @@ export default function WorkoutOverview() {
 
   const { protocol } = workout.structure;
   const supersets = [...workout.supersets].sort((a, b) => a.order - b.order);
+
+  function handleConfirmLog() {
+    if (!workout) return;
+    logWorkout(workout.id);
+    navigate("/");
+  }
 
   return (
     <div className="screen">
@@ -75,6 +84,26 @@ export default function WorkoutOverview() {
             })}
         </div>
       ))}
+
+      {armed ? (
+        <div className="log-workout log-workout-confirm">
+          <button type="button" className="log-workout-confirm-main" onClick={handleConfirmLog}>
+            Record Workout on {formatDate(todayISO())}
+          </button>
+          <button
+            type="button"
+            className="log-workout-cancel"
+            onClick={() => setArmed(false)}
+            aria-label="Cancel logging workout"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <button type="button" className="log-workout" onClick={() => setArmed(true)}>
+          Log Workout
+        </button>
+      )}
     </div>
   );
 }
