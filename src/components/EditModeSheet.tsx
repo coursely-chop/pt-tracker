@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { formatLoad, todayISO } from "../lib/format";
+import { todayISO } from "../lib/format";
+import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, computeBandWeight } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
-import type { BandLoad, ExerciseTarget, Load, ProgressionEntry, RepsTarget, SideTarget } from "../types";
+import type { BandLoad, ExerciseTarget, Load, ProgressionEntry, SideTarget } from "../types";
 
 const WEIGHT_STEP = 2.5;
 const REPS_STEP = 1;
-const BAND_COLORS = ["yellow", "green", "blue", "black", "red"];
 
 function cloneLoad(load: Load): Load {
   return JSON.parse(JSON.stringify(load));
@@ -60,9 +60,7 @@ export default function EditModeSheet() {
   const exercise = editingExerciseId ? getExercise(editingExerciseId) : undefined;
 
   const [asymmetric, setAsymmetric] = useState(false);
-  const [useRange, setUseRange] = useState(false);
   const [reps, setReps] = useState(1);
-  const [repsMax, setRepsMax] = useState(1);
   const [load, setLoad] = useState<Load>({ kind: "bodyweight" });
   const [leftReps, setLeftReps] = useState(1);
   const [rightReps, setRightReps] = useState(1);
@@ -90,28 +88,28 @@ export default function EditModeSheet() {
       setLoad(cloneLoad(target.load));
     }
 
-    if (target.reps != null && typeof target.reps === "object") {
-      setUseRange(true);
-      setReps(target.reps.min);
-      setRepsMax(target.reps.max);
-    } else {
-      const fallback = typeof target.reps === "number" ? target.reps : target.repRange.min;
-      setUseRange(false);
-      setReps(fallback);
-      setRepsMax(fallback);
-    }
+    setReps(target.reps ?? target.repRange.min);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingExerciseId]);
 
   if (!exercise) return null;
 
   function handleAsymmetricToggle(checked: boolean) {
-    if (checked && exercise!.target.sides == null) {
-      // First time splitting: start both sides from the current combined value.
-      setLeftLoad(cloneLoad(load));
-      setRightLoad(cloneLoad(load));
-      setLeftReps(reps);
-      setRightReps(reps);
+    if (checked) {
+      if (exercise!.target.sides == null) {
+        // First time splitting: start both sides from the current combined value.
+        setLeftLoad(cloneLoad(load));
+        setRightLoad(cloneLoad(load));
+        setLeftReps(reps);
+        setRightReps(reps);
+      }
+    } else {
+      // Collapsing back to one combined value: the combined state (`load`/`reps`)
+      // is never populated for an exercise that started asymmetric (the initial
+      // effect only fills left/right), so carry the left side forward instead of
+      // falling back to whatever `load` defaulted to.
+      setLoad(cloneLoad(leftLoad));
+      setReps(leftReps);
     }
     setAsymmetric(checked);
   }
@@ -131,9 +129,8 @@ export default function EditModeSheet() {
       entries.push({ date, load: leftLoad, reps: leftReps, note: null, side: "left" });
       entries.push({ date, load: rightLoad, reps: rightReps, note: null, side: "right" });
     } else {
-      const repsValue: RepsTarget = useRange ? { min: reps, max: repsMax } : reps;
-      newTarget = { ...exercise.target, reps: repsValue, load, sides: null };
-      entries.push({ date, load, reps: repsValue, note: null });
+      newTarget = { ...exercise.target, reps, load, sides: null };
+      entries.push({ date, load, reps, note: null });
     }
 
     updateExerciseTarget(exercise.id, newTarget, entries);
@@ -179,34 +176,7 @@ export default function EditModeSheet() {
         ) : (
           <>
             <LoadEditor load={load} setLoad={setLoad} />
-            <div className="field-group">
-              <label className="toggle-row">
-                <input type="checkbox" checked={useRange} onChange={(e) => setUseRange(e.target.checked)} />
-                Use a rep range
-              </label>
-              {useRange ? (
-                <>
-                  <Stepper
-                    label="Min"
-                    value={reps}
-                    unit="reps"
-                    min={1}
-                    step={REPS_STEP}
-                    onChange={(v) => setReps(Math.min(v, repsMax))}
-                  />
-                  <Stepper
-                    label="Max"
-                    value={repsMax}
-                    unit="reps"
-                    min={reps}
-                    step={REPS_STEP}
-                    onChange={(v) => setRepsMax(Math.max(v, reps))}
-                  />
-                </>
-              ) : (
-                <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
-              )}
-            </div>
+            <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
           </>
         )}
 
@@ -256,45 +226,28 @@ function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) => void 
       : [...bandLoad.bands, color];
     setLoad({ ...bandLoad, bands });
   };
+  const weight = computeBandWeight(bandLoad.bands);
 
   return (
     <div className="load-editor">
       <div className="band-picker">
-        {BAND_COLORS.map((color) => (
-          <button
-            key={color}
-            type="button"
-            className={`band-chip${bandLoad.bands.includes(color) ? " selected" : ""}`}
-            onClick={() => toggleBand(color)}
-          >
-            {color}
-          </button>
-        ))}
+        {BAND_COLORS.map((color) => {
+          const selected = bandLoad.bands.includes(color);
+          return (
+            <button
+              key={color}
+              type="button"
+              className={`band-swatch${selected ? " selected" : ""}`}
+              style={{ backgroundColor: BAND_HEX[color] }}
+              onClick={() => toggleBand(color)}
+              aria-pressed={selected}
+              aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs`}
+              title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
+            />
+          );
+        })}
+        <div className="band-weight">{weight > 0 ? `${weight} lbs` : "—"}</div>
       </div>
-      {bandLoad.equivalentLbs != null ? (
-        <>
-          <Stepper
-            label="Equivalent weight"
-            value={bandLoad.equivalentLbs}
-            unit="lbs"
-            min={0}
-            step={WEIGHT_STEP}
-            onChange={(v) => setLoad({ ...bandLoad, equivalentLbs: v })}
-          />
-          <button
-            type="button"
-            className="text-link-btn"
-            onClick={() => setLoad({ ...bandLoad, equivalentLbs: undefined })}
-          >
-            Clear equivalent weight
-          </button>
-        </>
-      ) : (
-        <button type="button" className="text-link-btn" onClick={() => setLoad({ ...bandLoad, equivalentLbs: 10 })}>
-          + Set equivalent weight
-        </button>
-      )}
-      <div className="load-preview">{formatLoad(bandLoad)}</div>
     </div>
   );
 }

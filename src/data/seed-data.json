@@ -51,12 +51,12 @@
         "load": null,
         "sides": {
           "left": {
-            "load": { "kind": "band", "bands": ["yellow"], "equivalentLbs": 10 },
+            "load": { "kind": "band", "bands": ["yellow"] },
             "reps": 10,
             "tempo": "slow and controlled - shoulder rehab side"
           },
           "right": {
-            "load": { "kind": "band", "bands": ["red", "blue"], "equivalentLbs": 70 },
+            "load": { "kind": "band", "bands": ["red", "blue"] },
             "reps": 15
           }
         }
@@ -131,12 +131,12 @@
         "load": null,
         "sides": {
           "left": {
-            "load": { "kind": "band", "bands": ["blue"], "equivalentLbs": 20 },
+            "load": { "kind": "band", "bands": ["blue"] },
             "reps": 10,
             "tempo": "slow and controlled - shoulder rehab side"
           },
           "right": {
-            "load": { "kind": "band", "bands": ["red", "green"], "equivalentLbs": 80, "homeEquivalentLbs": 70 },
+            "load": { "kind": "band", "bands": ["red", "green"] },
             "reps": 15
           }
         }

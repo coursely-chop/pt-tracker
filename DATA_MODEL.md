@@ -48,7 +48,7 @@ Because this is computed from `target.load` live, it automatically stays correct
 target: {
   repRange: { min, max }       // the exercise's general prescribed range, e.g. 8-15 (metadata, not what gets edited)
   perSide: boolean             // true if reps/load are tracked per side
-  reps: (number | RepRange) | null   // the LIVE working-set target — a fixed number (15) or a range (12-15)
+  reps: number | null          // the LIVE working-set target — what Edit Mode actually changes
   load: Load | null            // current target load, when symmetric
   sides: {                     // used INSTEAD of reps/load when the two
     left:  { load, reps },     // sides are asymmetric (see below)
@@ -57,7 +57,7 @@ target: {
 }
 ```
 
-`repRange` and `reps` used to be easy to conflate — both are "a range of numbers" — so to be explicit: `repRange` is fixed exercise metadata (the trainer's stated range, doesn't change from editing), while `reps` is the thing Edit Mode actually writes to, and can itself be a range if you want to work toward "12-15" rather than a fixed count. Per-side (`sides.left/right.reps`) stays a plain number for now — no exercise has needed an asymmetric range yet, and adding it before it's needed would be speculative.
+`repRange` and `reps` are easy to conflate — both are "a range of numbers" — so to be explicit: `repRange` is fixed exercise metadata (the trainer's stated range, doesn't change from editing), while `reps` is the single number Edit Mode actually writes to. An earlier pass let `reps` also be a range (e.g. "work toward 12-15") via a `RepsTarget = number | RepRange` union, with a min/max split in Edit Mode — that's been reverted. It added real complexity (keeping min ≤ max valid in the UI) for a use case that didn't earn it, so `reps` is back to a plain number everywhere: `target`, per-side targets, and `progression[]` entries alike.
 
 ### `Load`
 
@@ -65,11 +65,11 @@ Weight isn't always a plain number — the note mixes free weights and resistanc
 
 ```
 { kind: "freeWeight", lbs: number }
-{ kind: "band", bands: string[], equivalentLbs?: number, homeEquivalentLbs?: number }
+{ kind: "band", bands: string[] }
 { kind: "bodyweight" }
 ```
 
-`homeEquivalentLbs` exists only on the kickback exercise, where the note gives a different equivalent weight for the home band set ("70 lbs at home") vs. the gym one.
+A band's equivalent weight isn't stored — it's a fixed property of the bands themselves (yellow=10, green=20, blue=30, black=40, red=50 lbs, owned pairs sum when stacked), computed on the fly by `computeBandWeight()` in `lib/equipment.ts` from whichever colors are in `bands[]`. Storing a number here would let it drift out of sync with the real bands; this way there's exactly one place the weight-per-color mapping lives, and every band-loaded exercise's displayed weight, history point, and edit-mode UI all derive from it. (Earlier drafts stored `equivalentLbs` as an independent, manually-set number, plus a `homeEquivalentLbs` for a "different bands at home" case — both are gone now that there's one canonical home band set with fixed weights.)
 
 ### Asymmetric sides: Resistance Band Curls & Single Arm Band Kick-Backs
 
@@ -87,12 +87,12 @@ For the other asymmetric-*capable* exercises (Side Lunges, Single Leg Deadlift),
 This is **not** a per-session workout log — you don't need to check in every time you do the workout. It's a lightweight log of the trainer's own dated notes on weight changes (e.g. Side Lunges: "6/25- used 6lbs", "7/24- used 10lbs", and the current value dated "7/28"). You'd add an entry here only when the target weight/reps actually changes, which is exactly what "track how the reps/weight goes up over time" needs — a timeline of target changes, not a diary of every workout instance.
 
 ```
-{ date: "YYYY-MM-DD", load: Load | null, reps: (number | RepRange) | null, note: string | null, side?: "left" | "right" }
+{ date: "YYYY-MM-DD", load: Load | null, reps: number | null, note: string | null, side?: "left" | "right" }
 ```
 
 **Assumption flagged:** the source note only gave month/day ("6/25", "7/24", "7/28"), no year. Since today's date is 2026-08-05 and those three dates fall in a plausible recent progression right before today, I inferred year **2026**. If the note is actually older than that, these dates need correcting.
 
-**Not every entry is plottable.** The History screen (`lib/history.ts`) needs both a numeric weight and a numeric reps value to place a point — bodyweight entries have no weight axis, and some entries (the two seed entries above, and the one legacy note-only Band Curls entry) have `reps: null` or both fields `null`. Those are counted (`skippedCount`) and disclosed on the History screen rather than just vanishing, so the chart never looks like a more complete history than it is. A `RepRange` reps value plots at its midpoint.
+**Not every entry is plottable.** The History screen (`lib/history.ts`) needs both a numeric weight and a numeric reps value to place a point — bodyweight entries have no weight axis, and some entries (the two seed entries above, and the one legacy note-only Band Curls entry) have `reps: null` or both fields `null`. Those are counted (`skippedCount`) and disclosed on the History screen rather than just vanishing, so the chart never looks like a more complete history than it is.
 
 ### Alternates
 

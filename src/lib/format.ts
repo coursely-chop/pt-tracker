@@ -1,11 +1,13 @@
-import { pickWarmupWeight } from "./equipment";
-import { isRepRange, type Exercise, type ExerciseTarget, type Load, type RepsTarget } from "../types";
+import { computeBandWeight, pickWarmupWeight } from "./equipment";
+import type { Exercise, ExerciseTarget, Load } from "../types";
 
-function capitalize(s: string): string {
+export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** e.g. "5 lbs" or, for bands, "20 lbs (Blue band)" / "80 lbs (Red & Green Bands)". */
+/** e.g. "5 lbs" or, for bands, "10 lbs (Yellow band)" / "80 lbs (Red & Blue Bands)" —
+ * the band weight is always computed from the bands themselves (see equipment.ts),
+ * never stored, so it can't drift out of sync with the fixed per-color weights. */
 export function formatLoad(load: Load | null): string {
   if (!load) return "";
   switch (load.kind) {
@@ -14,24 +16,17 @@ export function formatLoad(load: Load | null): string {
     case "band": {
       const isPlural = load.bands.length > 1;
       const bandLabel = `${load.bands.map(capitalize).join(" & ")} ${isPlural ? "Bands" : "band"}`;
-      return load.equivalentLbs ? `${load.equivalentLbs} lbs (${bandLabel})` : bandLabel;
+      const weight = computeBandWeight(load.bands);
+      return weight > 0 ? `${weight} lbs (${bandLabel})` : bandLabel;
     }
     case "bodyweight":
       return "Bodyweight";
   }
 }
 
-function formatReps(reps: number, repUnit?: string): string {
+export function formatReps(reps: number, repUnit?: string): string {
   const unit = repUnit ?? "rep";
   return `${reps} ${unit}${reps === 1 ? "" : "s"}`;
-}
-
-export function formatRepsTarget(reps: RepsTarget, repUnit?: string): string {
-  if (isRepRange(reps)) {
-    const unit = repUnit ?? "reps";
-    return `${reps.min}-${reps.max} ${unit}`;
-  }
-  return formatReps(reps, repUnit);
 }
 
 /** e.g. "(x2) 15 reps @ 5 lbs" or, for asymmetric targets, "(x2) L: ...; R: ...". */
@@ -45,7 +40,7 @@ export function formatWorkingLine(sets: number, target: ExerciseTarget): string 
 
   const repsStr =
     target.reps != null
-      ? formatRepsTarget(target.reps, target.repUnit)
+      ? formatReps(target.reps, target.repUnit)
       : `${target.repRange.min}-${target.repRange.max} ${target.repUnit ?? "reps"}`;
   const loadStr = target.load ? formatLoad(target.load) : null;
   return loadStr ? `(x${sets}) ${repsStr} @ ${loadStr}` : `(x${sets}) ${repsStr}`;

@@ -51,7 +51,7 @@ Reached by tapping an exercise on the Workout Overview, when you want more than 
 - Exercise name.
 - Media: picture/gif/video, collapsible.
 - **Warmup** section: sets + reps, and target load (if the exercise has one — see §5 for load-type branching).
-- **Working Sets** section: sets + reps (fixed number, or a range like 12-15 if specified), and target load.
+- **Working Sets** section: sets + reps, and target load.
 - Set counts (warmup/working) are pulled from the **workout-level protocol** (e.g. 2 working + 1 warmup), not set per-exercise — matches the existing data model, no override mechanism in MVP.
 - If the exercise has asymmetric left/right targets, show both side by side; otherwise a single combined value.
 - Actions: **Back to Overview** · **Next Movement** (advances through the current superset's slots, then into the next superset, in workout order) · **Edit reps/weight** · **Notes** · **Edit details** (see [§10](#10-edit-exercise-details) — metadata only, separate from editing reps/weight).
@@ -66,7 +66,7 @@ Editing branches by the exercise's load type:
 - **Free weight:** stepper, ±2.5 / 5 / 7.5 / 10 lbs.
 - **Band:** band-color (or combo) picker instead of a numeric stepper.
 - **Bodyweight / no load:** no weight control at all — reps-only edit.
-- Reps: numeric input; optional toggle to switch working-set reps to a range (e.g. 12-15) instead of a fixed number.
+- Reps: a stepper, same ±1-at-a-time interaction as weight. (An earlier pass added a toggle for a working-set range like 12-15 — reverted; it added real complexity, keeping min ≤ max valid in the UI, for a use case that didn't earn it. Reps is a single number.)
 - **Left/Right split:** off by default (single combined input). Toggling it splits weight + reps into two parallel inputs labeled Left / Right.
 - Saving updates the exercise's current target **and** appends a dated entry to its progression history — this is the only thing that writes to progression; there's no separate "log a set" action.
 
@@ -80,7 +80,7 @@ Editing branches by the exercise's load type:
 ### 7. History
 
 - Reached via a "View History" link on Movement Detail.
-- **Connected scatter:** each past progression entry plotted as a point (weight on X, reps on Y), connected in chronological order so the trajectory is visible, not just a cloud of dots. A rep range (e.g. 12-15) plots at its midpoint since a range isn't a single point.
+- **Connected scatter:** each past progression entry plotted as a point (weight on X, reps on Y), connected in chronological order so the trajectory is visible, not just a cloud of dots.
 - Only entries with **both** a weight and a rep value get plotted — some progression entries (older trainer notes, a note-only entry) have just one or neither. Those are counted and disclosed ("N earlier entries ... not shown") rather than silently making the chart look sparser than the real history, or silently making one up.
 - Asymmetric exercises (left/right progression entries) get two separate connected series, color-coded, with a small legend — not one line blending two different loads together.
 - Fewer than 2 plottable points: no chart (a single point or a line to nowhere isn't a "trend") — a plain-text message showing that one data point instead, or "no history yet" for zero.
@@ -134,7 +134,7 @@ Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 
 - **Resolved:** **workout completions** — `{ workoutId, date }`, a new top-level `completions[]` array. See `DATA_MODEL.md`.
 - New entity, still not implemented: **notes** — `{ id, exerciseId, text, createdAt, pinned }`.
-- **Resolved:** `target.reps` is now `number | RepRange`, so a working-set target can be a fixed count (15) or a live range (12-15), distinct from the exercise's general `repRange` metadata. See `DATA_MODEL.md`.
+- **Resolved, then reverted:** `target.reps` briefly became `number | RepRange` to support a working-set range like 12-15, distinct from the exercise's general `repRange` metadata. Reverted back to a plain `number` — the min ≤ max validity logic it required in Edit Mode wasn't worth it for a use case that hadn't proven necessary. See `DATA_MODEL.md`.
 - "Next movement" navigation is computable from `workouts[].supersets[].slots[]` ordering — implemented, no schema change was needed.
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
@@ -145,9 +145,11 @@ Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 
 The trainer's "50-75% of working weight" warmup guidance assumes a weight rack; the actual home setup is a **3 lb dumbbell pair, a 10 lb dumbbell pair, and resistance bands**. That gap is real — at a 10 lb working weight, the ideal warmup range (5-7.5 lbs) isn't reachable with either pair, so the app picks the closer/safer option (3 lbs) instead of pretending a perfect match exists. See `DATA_MODEL.md`'s "Computed warmup weight" section for the exact rule.
 
-Scope of this pass: **free weights only**. Band "resistance" doesn't reduce the same way a free weight does (it means switching to a different band, not a fractional one), so Resistance Band Curls and Single Arm Band Kick-Backs still show the trainer's plain-text warmup guidance. Extending this to bands needs an actual band inventory (which colors are owned) — not captured yet.
+Scope of this pass was **free weights only** for warmup snapping specifically — band "resistance" doesn't reduce the same way (it means switching to a different band, not a fractional one), so Resistance Band Curls and Single Arm Band Kick-Backs still show the trainer's plain-text warmup guidance there.
 
-The equipment list itself is a hardcoded constant (`OWNED_FREE_WEIGHTS` in `src/lib/equipment.ts`) — there's no settings screen to edit it yet. Worth revisiting if/when equipment changes (e.g. a 5 lb pair gets added) or if this extends to bands.
+The band inventory itself, though, is now known: **yellow=10, green=20, blue=30, black=40, red=50 lbs**, owned pairs summing when stacked (e.g. red+green=70). That's used in Edit Mode's band picker (a swatch per color, weight computed live from what's selected) and everywhere a band load is displayed or charted — see `DATA_MODEL.md`'s `Load` section. It isn't used for warmup snapping yet; that'd still need deciding what "50-75%" even means for a band (a lighter color, not a fractional weight).
+
+The equipment lists themselves are hardcoded constants (`OWNED_FREE_WEIGHTS`, `BAND_WEIGHTS` in `src/lib/equipment.ts`) — there's no settings screen to edit them yet. Worth revisiting if equipment changes (e.g. a 5 lb pair gets added, or a band wears out and its effective resistance shifts).
 
 ## Open items
 

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { formatLoad, formatRepsTarget, formatWarmupLine } from "../lib/format";
+import { formatLoad, formatReps, formatWarmupLine } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 export default function MovementDetail() {
@@ -85,7 +85,7 @@ export default function MovementDetail() {
           <div>
             {protocol.workingSets}x{" "}
             {target.reps != null
-              ? formatRepsTarget(target.reps, target.repUnit)
+              ? formatReps(target.reps, target.repUnit)
               : `${target.repRange.min}-${target.repRange.max} reps`}{" "}
             @ {target.load ? formatLoad(target.load) : "—"}
           </div>

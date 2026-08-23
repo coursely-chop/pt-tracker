@@ -6,8 +6,6 @@ export interface FreeWeightLoad {
 export interface BandLoad {
   kind: "band";
   bands: string[];
-  equivalentLbs?: number;
-  homeEquivalentLbs?: number;
 }
 
 export interface BodyweightLoad {
@@ -27,20 +25,13 @@ export interface SideTarget {
   tempo?: string;
 }
 
-/** A single working number (e.g. 15) or a range to aim for (e.g. 12-15). */
-export type RepsTarget = number | RepRange;
-
-export function isRepRange(reps: RepsTarget): reps is RepRange {
-  return typeof reps === "object";
-}
-
 export interface ExerciseTarget {
   /** The exercise's general prescribed range (e.g. 8-15) — metadata, not what Edit Mode changes. */
   repRange: RepRange;
   repUnit?: string;
   perSide: boolean;
   /** The live working-set target — what Edit Mode actually changes. */
-  reps: RepsTarget | null;
+  reps: number | null;
   load: Load | null;
   sides: { left: SideTarget; right: SideTarget } | null;
 }
@@ -48,7 +39,7 @@ export interface ExerciseTarget {
 export interface ProgressionEntry {
   date: string;
   load: Load | null;
-  reps: RepsTarget | null;
+  reps: number | null;
   note: string | null;
   side?: "left" | "right";
 }

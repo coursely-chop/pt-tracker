@@ -1,4 +1,5 @@
-import { isRepRange, type Exercise, type Load, type RepsTarget } from "../types";
+import { computeBandWeight } from "./equipment";
+import type { Exercise, Load } from "../types";
 
 export interface HistoryPoint {
   date: string;
@@ -10,14 +11,11 @@ export interface HistoryPoint {
 function extractWeight(load: Load | null): number | null {
   if (!load) return null;
   if (load.kind === "freeWeight") return load.lbs;
-  if (load.kind === "band") return load.equivalentLbs ?? null;
+  if (load.kind === "band") {
+    const weight = computeBandWeight(load.bands);
+    return weight > 0 ? weight : null;
+  }
   return null; // bodyweight has no weight dimension to plot
-}
-
-function extractReps(reps: RepsTarget | null): number | null {
-  if (reps == null) return null;
-  // A range (e.g. 12-15) isn't a single point — the midpoint stands in for it.
-  return isRepRange(reps) ? (reps.min + reps.max) / 2 : reps;
 }
 
 /**
@@ -31,7 +29,7 @@ export function getHistoryData(exercise: Exercise): { points: HistoryPoint[]; sk
 
   for (const entry of exercise.progression) {
     const weight = extractWeight(entry.load);
-    const reps = extractReps(entry.reps);
+    const reps = entry.reps;
     if (weight == null || reps == null) continue;
     points.push({ date: entry.date, weight, reps, side: entry.side });
   }
