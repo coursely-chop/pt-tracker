@@ -79,8 +79,11 @@ Editing branches by the exercise's load type:
 
 ### 7. History
 
-- Reached from Movement Detail.
-- **Connected scatter:** each past progression entry plotted as a point (weight on X, reps on Y), connected in chronological order so the trajectory is visible, not just a cloud of dots.
+- Reached via a "View History" link on Movement Detail.
+- **Connected scatter:** each past progression entry plotted as a point (weight on X, reps on Y), connected in chronological order so the trajectory is visible, not just a cloud of dots. A rep range (e.g. 12-15) plots at its midpoint since a range isn't a single point.
+- Only entries with **both** a weight and a rep value get plotted — some progression entries (older trainer notes, a note-only entry) have just one or neither. Those are counted and disclosed ("N earlier entries ... not shown") rather than silently making the chart look sparser than the real history, or silently making one up.
+- Asymmetric exercises (left/right progression entries) get two separate connected series, color-coded, with a small legend — not one line blending two different loads together.
+- Fewer than 2 plottable points: no chart (a single point or a line to nowhere isn't a "trend") — a plain-text message showing that one data point instead, or "no history yet" for zero.
 - Nav back to Movement Detail and to Workout Overview.
 
 ### 8. Log Workout (completion)
@@ -136,7 +139,7 @@ Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
 
-**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, and Log Workout (§3-5, §8) — all reading/writing through `localStorage`, wired end to end. Notes, History, Create New Home Workout, and Edit Exercise Details are still just this brief.
+**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, and History (§3-5, §7-8) — all reading/writing through `localStorage`, wired end to end. Notes, Create New Home Workout, and Edit Exercise Details are still just this brief.
 
 ## Home equipment
 

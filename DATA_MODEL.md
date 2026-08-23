@@ -92,6 +92,8 @@ This is **not** a per-session workout log — you don't need to check in every t
 
 **Assumption flagged:** the source note only gave month/day ("6/25", "7/24", "7/28"), no year. Since today's date is 2026-08-05 and those three dates fall in a plausible recent progression right before today, I inferred year **2026**. If the note is actually older than that, these dates need correcting.
 
+**Not every entry is plottable.** The History screen (`lib/history.ts`) needs both a numeric weight and a numeric reps value to place a point — bodyweight entries have no weight axis, and some entries (the two seed entries above, and the one legacy note-only Band Curls entry) have `reps: null` or both fields `null`. Those are counted (`skippedCount`) and disclosed on the History screen rather than just vanishing, so the chart never looks like a more complete history than it is. A `RepRange` reps value plots at its midpoint.
+
 ### Alternates
 
 Superset 2's second exercise offers two options ("Lying Tricep Extensions **or** Single Arm Band Kick-Backs"). Both exist as separate exercise definitions, and the alternate carries `alternateFor: "lying-db-tricep-extension"` — keeps both as first-class exercises with their own targets/progression if you end up alternating between them.

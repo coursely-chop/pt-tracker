@@ -126,6 +126,9 @@ export default function MovementDetail() {
           </button>
         )}
       </div>
+      <Link to={`/workouts/${workout.id}/exercises/${exercise.id}/history`} className="history-link">
+        View History
+      </Link>
     </div>
   );
 }
