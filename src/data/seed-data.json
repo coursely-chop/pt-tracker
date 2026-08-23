@@ -1,0 +1,233 @@
+{
+  "exercises": [
+    {
+      "id": "side-lunges",
+      "name": "Side Lunges",
+      "target": {
+        "repRange": { "min": 8, "max": 15 },
+        "perSide": true,
+        "reps": 15,
+        "load": { "kind": "freeWeight", "lbs": 5 },
+        "sides": null
+      },
+      "warmup": "50-75% of working weight for 10 reps each side",
+      "warmupSpec": { "reps": 10, "percentRange": { "min": 50, "max": 75 } },
+      "progressionRule": "Increase 2.5-5 lbs at a time",
+      "cues": [
+        "Maintain a slight bend in the knee on the non-working side"
+      ],
+      "progression": [
+        {
+          "date": "2026-06-25",
+          "load": { "kind": "freeWeight", "lbs": 6 },
+          "reps": null,
+          "note": "used 6lbs"
+        },
+        {
+          "date": "2026-07-24",
+          "load": { "kind": "freeWeight", "lbs": 10 },
+          "reps": null,
+          "note": "used 10lbs"
+        },
+        {
+          "date": "2026-07-28",
+          "load": { "kind": "freeWeight", "lbs": 5 },
+          "reps": 15,
+          "note": null
+        }
+      ],
+      "links": {
+        "instructional": "https://www.coachmag.co.uk/bodyweight-exercises/6431/how-to-do-the-side-lunge",
+        "video": "https://youtu.be/TW9VZa-xLgc"
+      }
+    },
+    {
+      "id": "resistance-band-curls",
+      "name": "Resistance Band Curls",
+      "target": {
+        "repRange": { "min": 8, "max": 15 },
+        "perSide": true,
+        "reps": null,
+        "load": null,
+        "sides": {
+          "left": {
+            "load": { "kind": "band", "bands": ["yellow"], "equivalentLbs": 10 },
+            "reps": 10,
+            "tempo": "slow and controlled - shoulder rehab side"
+          },
+          "right": {
+            "load": { "kind": "band", "bands": ["red", "blue"], "equivalentLbs": 70 },
+            "reps": 15
+          }
+        }
+      },
+      "warmup": "10 reps at 50-75% working weight",
+      "progressionRule": "Increase by 2.5-5 lbs at a time when you can achieve the high end of the rep range (15) with good form",
+      "cues": [
+        "Do not let elbows lock out at the bottom of the movement"
+      ],
+      "asymmetryNote": "Left arm is the shoulder-rehab side. Trainer's guidance: keep working the right (uninjured) arm normally, keep the left arm light and slow/controlled.",
+      "progression": [
+        {
+          "date": "2026-06-25",
+          "side": "left",
+          "load": null,
+          "reps": null,
+          "note": "Yellow feels easy"
+        }
+      ],
+      "links": {}
+    },
+    {
+      "id": "single-leg-deadlift",
+      "name": "Single Leg Deadlift",
+      "target": {
+        "repRange": { "min": 8, "max": 12 },
+        "perSide": true,
+        "reps": 12,
+        "load": { "kind": "freeWeight", "lbs": 10 },
+        "sides": null
+      },
+      "warmup": "5 reps at 50% working weight (bodyweight currently)",
+      "progressionRule": "Increase 2.5-5 lbs each hand at a time",
+      "cues": [
+        "Keep shoulder blades back",
+        "Lead with the leg"
+      ],
+      "progression": [],
+      "links": {
+        "instructional": "https://classpass.com/movements/single-leg-deadlift",
+        "video": "https://youtu.be/84hrdsHgDuQ"
+      }
+    },
+    {
+      "id": "lying-db-tricep-extension",
+      "name": "Lying Dumbbell Tricep Extensions",
+      "target": {
+        "repRange": { "min": 8, "max": 15 },
+        "perSide": false,
+        "reps": 20,
+        "load": { "kind": "freeWeight", "lbs": 10 },
+        "sides": null
+      },
+      "warmup": "10 reps with 50-75% of working weight",
+      "warmupSpec": { "reps": 10, "percentRange": { "min": 50, "max": 75 } },
+      "progressionRule": "Progress 2.5-5 lbs when you can achieve the high end of the rep range",
+      "cues": [],
+      "progression": [],
+      "links": {
+        "instructional": "https://exrx.net/WeightExercises/Triceps/DBLyingTriExt",
+        "video": "https://youtu.be/yRnI25y5FZw"
+      },
+      "sourceNote": "Logged reps (20) exceed the exercise's own stated rep range (8-15) in the source note - carried over as-is rather than silently corrected."
+    },
+    {
+      "id": "single-arm-band-kickback",
+      "name": "Single Arm Band Kick-Backs",
+      "target": {
+        "repRange": { "min": 8, "max": 12 },
+        "perSide": true,
+        "reps": null,
+        "load": null,
+        "sides": {
+          "left": {
+            "load": { "kind": "band", "bands": ["blue"], "equivalentLbs": 20 },
+            "reps": 10,
+            "tempo": "slow and controlled - shoulder rehab side"
+          },
+          "right": {
+            "load": { "kind": "band", "bands": ["red", "green"], "equivalentLbs": 80, "homeEquivalentLbs": 70 },
+            "reps": 15
+          }
+        }
+      },
+      "warmup": "50-75% intensity for 10 reps",
+      "progressionRule": "Increase band resistance",
+      "cues": [
+        "Staggered foot position (leg opposite the working arm is forward)",
+        "Reach arm back at the end of the movement",
+        "Do not let the wrist cave in during the exercise"
+      ],
+      "asymmetryNote": "Left arm is the shoulder-rehab side. Trainer's guidance: keep working the right (uninjured) arm normally, keep the left arm light and slow/controlled.",
+      "progression": [],
+      "links": {},
+      "alternateFor": "lying-db-tricep-extension"
+    },
+    {
+      "id": "same-side-dead-bug",
+      "name": "Same Side Dead-Bugs",
+      "target": {
+        "repRange": { "min": 5, "max": 5 },
+        "perSide": true,
+        "reps": 5,
+        "load": { "kind": "bodyweight" },
+        "sides": null
+      },
+      "warmup": null,
+      "progressionRule": null,
+      "cues": [
+        "Keep back flat throughout / abs engaged",
+        "Exhale slowly as you extend",
+        "Inhale as you return to the starting position"
+      ],
+      "progression": [],
+      "links": {}
+    },
+    {
+      "id": "single-leg-standing-reach",
+      "name": "Single Leg Standing 8-Point Leg Reaches",
+      "target": {
+        "repRange": { "min": 1, "max": 1 },
+        "repUnit": "round",
+        "perSide": true,
+        "reps": 1,
+        "load": { "kind": "bodyweight" },
+        "sides": null
+      },
+      "warmup": null,
+      "progressionRule": "Increase distance of the reaching leg",
+      "cues": [],
+      "progression": [],
+      "links": {}
+    }
+  ],
+  "workouts": [
+    {
+      "id": "home-strength-workout-2",
+      "name": "Home Strength Workout #2",
+      "structure": {
+        "dynamicStretching": "Refer to shared 'Dynamic Stretching' note (not duplicated here)",
+        "protocol": {
+          "workingSets": 2,
+          "warmupSets": 1,
+          "restBetweenExercisesSec": { "min": 15, "max": 30 },
+          "restBetweenSupersetsSec": { "min": 60, "max": 90 },
+          "notes": "Complete all sets of a superset before moving on to the next superset."
+        }
+      },
+      "supersets": [
+        {
+          "order": 1,
+          "slots": [
+            { "order": 1, "exerciseIds": ["side-lunges"] },
+            { "order": 2, "exerciseIds": ["resistance-band-curls"] }
+          ]
+        },
+        {
+          "order": 2,
+          "slots": [
+            { "order": 1, "exerciseIds": ["single-leg-deadlift"] },
+            { "order": 2, "exerciseIds": ["lying-db-tricep-extension", "single-arm-band-kickback"] }
+          ]
+        },
+        {
+          "order": 3,
+          "slots": [
+            { "order": 1, "exerciseIds": ["same-side-dead-bug"] },
+            { "order": 2, "exerciseIds": ["single-leg-standing-reach"] }
+          ]
+        }
+      ]
+    }
+  ]
+}
