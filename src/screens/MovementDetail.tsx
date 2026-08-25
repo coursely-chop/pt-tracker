@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { formatLoad, formatReps, formatWarmupLine } from "../lib/format";
+import { formatLoad, formatWarmupLine, formatWorkingLine } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 const SWIPE_THRESHOLD_PX = 60;
@@ -146,13 +146,7 @@ export default function MovementDetail() {
               </div>
             </div>
           ) : (
-            <div>
-              {protocol.workingSets}x{" "}
-              {target.reps != null
-                ? formatReps(target.reps, target.repUnit)
-                : `${target.repRange.min}-${target.repRange.max} reps`}{" "}
-              @ {target.load ? formatLoad(target.load) : "—"}
-            </div>
+            <div>{formatWorkingLine(protocol.workingSets, target)}</div>
           )}
         </div>
 
