@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import EditDetailsSheet from "./components/EditDetailsSheet";
 import EditModeSheet from "./components/EditModeSheet";
 import { DataProvider } from "./lib/DataContext";
 import History from "./screens/History";
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/workouts/:workoutId/exercises/:exerciseId/history" element={<History />} />
       </Routes>
       <EditModeSheet />
+      <EditDetailsSheet />
     </DataProvider>
   );
 }

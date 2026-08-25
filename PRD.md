@@ -54,8 +54,10 @@ Reached by tapping an exercise on the Workout Overview, when you want more than 
 - **Working Sets** section: sets + reps, and target load.
 - Set counts (warmup/working) are pulled from the **workout-level protocol** (e.g. 2 working + 1 warmup), not set per-exercise — matches the existing data model, no override mechanism in MVP.
 - If the exercise has asymmetric left/right targets, show both side by side; otherwise a single combined value.
-- Actions: **Back to Overview** · **Next Movement** (advances through the current superset's slots, then into the next superset, in workout order) · **Edit reps/weight** · **Notes** · **Edit details** (see [§10](#10-edit-exercise-details) — metadata only, separate from editing reps/weight).
-- Link into **History**.
+- Actions row: **Edit reps/weight** (primary) and **View History**, side by side.
+- **Edit Details** as a secondary link below the row (see [§10](#10-edit-exercise-details) — metadata only, separate from editing reps/weight).
+- **Back to Overview** via the back-link at the top of the screen.
+- **Next/previous movement:** a left/right swipe (not a button — an earlier draft had a "Next Movement →" button here; removed since a swipe reads more naturally as "step through the workout" and freed up the button slot for View History) advances through the current superset's slots, then into the next superset, in workout order, and back again. A small `‹ ›` pill cluster, right-justified on the same line as the exercise name, doubles as both the discoverability cue for the swipe *and* a tappable shortcut — whichever direction has nowhere to go renders disabled/dimmed rather than disappearing, so the cluster's shape stays consistent across the whole workout. (An earlier version used barely-visible arrows pinned to the screen edges, purely as a visual hint with no tap target — too subtle to actually read as "you can do something here.") `Notes` isn't built yet (§6) so isn't in this row.
 
 ### 5. Edit Mode (reps/weight)
 
@@ -114,10 +116,13 @@ Reordering exercises/supersets during this flow (drag vs. up/down controls) is a
 
 ### 10. Edit Exercise Details
 
-A metadata-only editor for an exercise, reached from Movement Detail (§4) or optionally right after inline-creating a new exercise in §9.
+A metadata-only editor for an exercise, reached via an "Edit Details" link on Movement Detail (§4) — implemented as a bottom sheet, same pattern as Edit Mode. Not yet wired up right after inline-creating a new exercise in §9, since that flow doesn't exist yet.
 
-- Editable: warmup text, progression rule, cues (add/remove), links (instructional/video URLs), media.
-- **Does not** touch target weight/reps and never writes to the progression log — that stays exclusive to Edit Mode (§5). Keeping these two edit paths separate avoids accidentally generating a progression entry just because someone added a form cue.
+- Header reads **"Edit [Exercise Name] Details"** rather than just the exercise name — Edit Mode's sheet already uses the bare name as its header, so this disambiguates which editor is open at a glance.
+- Editable: warmup text (multi-line — can run to a full sentence), progression rule (single-line — this text is never more than about one line in practice, so a resizable textarea would be over-building it), cues (add/remove, via a text input + Add button), links (instructional/video URLs — "media" here means these two link fields; there's no picture/gif upload, matching `DATA_MODEL.md`'s note that the source note had no extractable images).
+- If the exercise has a `warmupSpec` (its warmup weight is computed from equipment, not read from text — see `DATA_MODEL.md`), the warmup field shows a hint explaining the text won't actually appear anywhere while that's the case, rather than silently letting you edit something invisible.
+- **Unsaved-changes guard:** closing (X or backdrop tap) with any pending edit — including text typed into the "add a cue" field but never added — shows a custom in-sheet "Discard unsaved changes?" prompt (Cancel/Discard) instead of silently losing it. Styled to match the sheet rather than a native browser `confirm()`, consistent with the rest of this app being fully custom. Saving always bypasses this, since saving isn't a discard.
+- **Does not** touch target weight/reps and never writes to the progression log — that stays exclusive to Edit Mode (§5). Keeping these two edit paths separate avoids accidentally generating a progression entry just because someone added a form cue. Verified: editing details leaves `progression[]` and `target` byte-for-byte unchanged.
 
 ## Logging philosophy
 
@@ -139,7 +144,7 @@ Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
 
-**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, and History (§3-5, §7-8) — all reading/writing through `localStorage`, wired end to end. Notes, Create New Home Workout, and Edit Exercise Details are still just this brief.
+**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, History, and Edit Exercise Details (§3-5, §7-8, §10) — all reading/writing through `localStorage`, wired end to end. Notes and Create New Home Workout are still just this brief.
 
 ## Home equipment
 

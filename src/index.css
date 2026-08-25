@@ -335,11 +335,17 @@ body {
 
 .history-link {
   display: block;
+  width: 100%;
   text-align: center;
   margin-top: 12px;
+  padding: 0;
+  background: none;
+  border: none;
   color: var(--text-muted);
   text-decoration: none;
+  font: inherit;
   font-size: 14px;
+  cursor: pointer;
 }
 
 .history-link:hover {
@@ -600,4 +606,210 @@ body {
   color: var(--text-muted);
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* Edit Details sheet */
+
+.detail-field {
+  margin-bottom: 16px;
+}
+
+.detail-textarea,
+.detail-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  resize: vertical;
+}
+
+.detail-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.cue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cue-text {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.cue-remove {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cue-remove:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cue-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cue-add-row .detail-input {
+  flex: 1;
+}
+
+.cue-add-btn {
+  flex: none;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cue-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Movement navigation cluster on Movement Detail */
+
+.movement-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 20px;
+}
+
+.movement-header .screen-title {
+  margin: 4px 0 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.swipe-cluster {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.swipe-cluster-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.swipe-cluster-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+}
+
+.swipe-cluster-btn:disabled {
+  color: var(--text-muted);
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Ties the swipe/cluster navigation to a snappy directional entrance —
+ * .movement-content is re-keyed by exercise id, so this replays every time. */
+@media (prefers-reduced-motion: no-preference) {
+  .movement-content.slide-next {
+    animation: slide-in-next 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .movement-content.slide-prev {
+    animation: slide-in-prev 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes slide-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Discard confirmation (Edit Details) */
+
+.discard-confirm {
+  padding: 12px 4px 4px;
+  text-align: center;
+}
+
+.discard-confirm-text {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.discard-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.discard-cancel-btn,
+.discard-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.discard-cancel-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.discard-btn {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: white;
 }
