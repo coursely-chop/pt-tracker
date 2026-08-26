@@ -1,17 +1,18 @@
 import seedData from "../data/seed-data.json";
-import type { Exercise, SeedData, WorkoutCompletion } from "../types";
+import type { Exercise, Note, SeedData, WorkoutCompletion } from "../types";
 
 const STORAGE_KEY = "pt-tracker-data";
 
 export function loadData(): SeedData {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
-    // Migration-safe: older localStorage snapshots predate the completions field.
+    // Migration-safe: older localStorage snapshots predate the completions/notes fields.
     const parsed = JSON.parse(raw) as Partial<SeedData>;
     return {
       exercises: parsed.exercises ?? [],
       workouts: parsed.workouts ?? [],
       completions: parsed.completions ?? [],
+      notes: parsed.notes ?? [],
     };
   }
 
@@ -39,6 +40,24 @@ export function saveExercise(exercise: Exercise): SeedData {
 export function saveCompletion(completion: WorkoutCompletion): SeedData {
   const data = loadData();
   const next: SeedData = { ...data, completions: [...data.completions, completion] };
+  saveData(next);
+  return next;
+}
+
+/** Adds a new note (unknown id) or replaces an existing one (e.g. toggling pinned, editing text). */
+export function saveNote(note: Note): SeedData {
+  const data = loadData();
+  const exists = data.notes.some((n) => n.id === note.id);
+  const notes = exists ? data.notes.map((n) => (n.id === note.id ? note : n)) : [...data.notes, note];
+  const next: SeedData = { ...data, notes };
+  saveData(next);
+  return next;
+}
+
+/** Permanently removes a note. */
+export function deleteNote(noteId: string): SeedData {
+  const data = loadData();
+  const next: SeedData = { ...data, notes: data.notes.filter((n) => n.id !== noteId) };
   saveData(next);
   return next;
 }

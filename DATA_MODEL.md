@@ -131,7 +131,19 @@ The "Log Workout" action's entire write — one entry per tap, nothing more:
 
 Deliberately separate from `exercises[].progression[]`: this tracks *that* a workout happened, not what happened inside it. "Last completed" on the Workout List is just the max date across a workout's entries — no separate "last completed" field to keep in sync, it's derived (`lib/completions.ts`).
 
-Since this field didn't exist when earlier `localStorage` snapshots were written, `loadData()` defaults it to `[]` for anyone with pre-existing data rather than assuming it's always present — the only field so far that's needed this kind of migration handling.
+Since this field didn't exist when earlier `localStorage` snapshots were written, `loadData()` defaults it to `[]` for anyone with pre-existing data rather than assuming it's always present — the only field so far that's needed this kind of migration handling (now shared with `notes[]` below, for the same reason).
+
+## `notes[]`
+
+Free-text guidance or observations on an exercise — not structured data, and not another progression/completion-style log:
+
+```
+{ id: string, exerciseId: string, text: string, createdAt: string, pinned: boolean }
+```
+
+`createdAt` is a **full ISO timestamp**, not just a date like `progression[]`/`completions[]` use — a deliberate difference. Those two only ever need one entry per real-world event (a target change, a workout), so date granularity is enough. Notes don't have that constraint: you could plausibly jot two separate observations on the same exercise in one sitting, and "most-recent-first" needs to actually resolve that correctly rather than leaving same-day notes in an arbitrary order. `lib/notes.ts`'s `notesForExercise()` does the sort: pinned notes first, then most-recent-first within each group.
+
+Full CRUD now: add, edit text, pin/unpin, delete (with confirmation, since it's permanent). The first pass only had add and pin/unpin — delete turned out to be a real gap once notes were actually being used, not a speculative addition. Editing text never touches `createdAt`, so it can't silently reorder a note just because its wording got fixed.
 
 ## What this app is, on purpose
 

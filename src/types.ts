@@ -113,8 +113,23 @@ export interface WorkoutCompletion {
   date: string;
 }
 
+/**
+ * A free-text observation on an exercise — guidance or how a session felt,
+ * not structured data. createdAt is a full timestamp (not just a date, unlike
+ * ProgressionEntry/WorkoutCompletion) since notes can realistically be added
+ * more than once in a day and need to sort correctly against each other.
+ */
+export interface Note {
+  id: string;
+  exerciseId: string;
+  text: string;
+  createdAt: string;
+  pinned: boolean;
+}
+
 export interface SeedData {
   exercises: Exercise[];
   workouts: Workout[];
   completions: WorkoutCompletion[];
+  notes: Note[];
 }

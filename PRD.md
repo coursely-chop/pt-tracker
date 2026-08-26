@@ -74,10 +74,15 @@ Editing branches by the exercise's load type:
 
 ### 6. Notes
 
-- "Notes" action on Movement Detail opens a small text field (supports voice-to-text where the platform provides it).
-- Saved notes appear directly on the Movement Detail page: date-stamped, most-recent-first.
-- A note can be **pinned**, which keeps it at the top regardless of date.
+- A "+ Add Note" trigger inside the Notes section (not a separate sheet — light enough to live inline) reveals a small textarea. Voice-to-text isn't custom-built; it's inherited for free from the OS keyboard's dictation feature on any standard text input.
+- Each saved note renders as its own card (subtle lighter background, rounded corners, tight padding) — deliberately differentiated from the plain-text sections above it (Warmup, Working Sets, Cues, Progression). An earlier version rendered notes as plain rows with just a bottom-border separator; once more than one or two notes stacked up, that read as undifferentiated noise rather than distinct entries.
+- A small icon cluster per note — a pencil (edit) and a pin — replaces an earlier text-button design ("Pin"/"Pinned") that felt heavy-handed for something this minor. Pin toggles inline, one tap, no confirmation. Pinned state shows as a filled/accent pin vs. an outline muted one, the same "dim vs. bright" visual language already used for band swatches elsewhere in this app.
+- Pinning/unpinning animates: the note's card gets a brief accent-colored flash (pin only, not unpin — it's the more surprising of the two actions), and any note whose position changes as a result slides there rather than jumping instantly, so reordering reads as a move instead of a cut. Unpinning drops a note back to its ordinary chronological spot among the unpinned notes, animated the same way. Both respect `prefers-reduced-motion`.
+- Tapping the pencil opens that note's own edit view in place: the same textarea pattern as adding a note, prefilled with its current text, with **Delete Note** (red outline) and **Save Changes** (blue, primary CTA style) side by side, plus a small `×` to back out without saving or deleting (a real gap in the first pass — there was no way to cancel an edit once opened). Deleting asks for confirmation first (reusing the same in-sheet confirm pattern as Edit Exercise Details), since it's permanent and sits right next to Save Changes.
+- Editing a note's text does **not** change its timestamp or sort position — you're fixing what you wrote, not creating a new observation.
+- Saved notes appear directly on the Movement Detail page: date-stamped, most-recent-first, pinned notes always on top regardless of date.
 - Notes are guidance/observations (trainer cues, how a session felt) — not structured data, just free text.
+- While a note is being added or edited, the page's primary CTAs (Edit reps/weight, View History, Edit Details) dim and become inert. Only one thing should be editable at a time, and three primary-looking buttons competing with an open note editor felt like too many options at once. They return to normal the moment the note editor closes, whether by save, cancel, or delete.
 
 ### 7. History
 
@@ -138,13 +143,13 @@ Neither requires data entry beyond what you'd naturally do (adjust a weight, tap
 Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 
 - **Resolved:** **workout completions** — `{ workoutId, date }`, a new top-level `completions[]` array. See `DATA_MODEL.md`.
-- New entity, still not implemented: **notes** — `{ id, exerciseId, text, createdAt, pinned }`.
+- **Resolved:** **notes** — `{ id, exerciseId, text, createdAt, pinned }`, a new top-level `notes[]` array. `createdAt` is a full timestamp rather than a date, unlike `progression[]`/`completions[]` — see `DATA_MODEL.md`.
 - **Resolved, then reverted:** `target.reps` briefly became `number | RepRange` to support a working-set range like 12-15, distinct from the exercise's general `repRange` metadata. Reverted back to a plain `number` — the min ≤ max validity logic it required in Edit Mode wasn't worth it for a use case that hadn't proven necessary. See `DATA_MODEL.md`.
 - "Next movement" navigation is computable from `workouts[].supersets[].slots[]` ordering — implemented, no schema change was needed.
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
 
-**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, History, and Edit Exercise Details (§3-5, §7-8, §10) — all reading/writing through `localStorage`, wired end to end. Notes and Create New Home Workout are still just this brief.
+**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, History, Notes, and Edit Exercise Details (§3-8, §10) — all reading/writing through `localStorage`, wired end to end. Create New Home Workout is the only piece still just this brief.
 
 ## Home equipment
 

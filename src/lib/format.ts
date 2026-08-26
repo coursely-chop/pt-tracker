@@ -66,11 +66,11 @@ export function formatWarmupLine(sets: number, exercise: Exercise): string | nul
   return `(x${sets}) ${warmup}`;
 }
 
-/** "2026-08-23" -> "Aug 23". Appending a time avoids the classic bare-date
+/** "2026-08-23" -> "Aug 23, 2026". Appending a time avoids the classic bare-date
  * timezone bug where `new Date("2026-08-23")` parses as UTC midnight and can
  * display as the previous day in negative-UTC-offset timezones. */
 export function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function todayISO(): string {
