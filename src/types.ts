@@ -12,7 +12,16 @@ export interface BodyweightLoad {
   kind: "bodyweight";
 }
 
-export type Load = FreeWeightLoad | BandLoad | BodyweightLoad;
+/** A closed-loop resistance band (e.g. for lateral band walks) — a separate
+ * catalog from the open tube BandLoad above (see Equipment.ownedLoopBands),
+ * but combined the same way: multiple loop bands are often worn at once, so
+ * this is an array of strengths, not a single value. */
+export interface LoopBandLoad {
+  kind: "loopBand";
+  strengths: ("light" | "moderate" | "strong")[];
+}
+
+export type Load = FreeWeightLoad | BandLoad | BodyweightLoad | LoopBandLoad;
 
 export interface RepRange {
   min: number;
@@ -146,12 +155,17 @@ export interface Note {
  * given the two lists merged; the split only matters for how Equipment
  * Settings displays and labels them. Bands are a subset of the fixed
  * BAND_WEIGHTS catalog in lib/equipment.ts (color-to-weight is physical, not
- * user-configurable — only *which* colors you own is).
+ * user-configurable — only *which* colors you own is). Loop bands are a
+ * separate, smaller catalog (light/moderate/strong) tracked the same way —
+ * kept apart from ownedBands since they're a physically different kind of
+ * band (closed loop, one worn at a time) even though "blue" and "black"
+ * happen to name a color in both catalogs.
  */
 export interface Equipment {
   ownedDumbbells: number[];
   ownedKettlebells: number[];
   ownedBands: string[];
+  ownedLoopBands: string[];
 }
 
 export interface SeedData {

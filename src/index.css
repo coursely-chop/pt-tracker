@@ -1339,17 +1339,20 @@ body {
   gap: 8px;
 }
 
+.builder-slot-group {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.builder-slot-group:last-of-type {
+  border-bottom: none;
+}
+
 .builder-slot-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.builder-slot-row:last-of-type {
-  border-bottom: none;
 }
 
 .builder-slot-name {
@@ -1364,15 +1367,28 @@ body {
   flex: none;
 }
 
-.builder-add-superset-btn {
-  margin-top: 4px;
-  margin-bottom: 18px;
+.builder-alternate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-left: 16px;
 }
 
-.builder-alternate-warning {
-  background: var(--surface);
-  border-radius: 8px;
-  padding: 10px 12px;
+.builder-alternate-name {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.builder-add-alternate-btn {
+  margin-top: 6px;
+  padding-left: 16px;
+  font-size: 13px;
+}
+
+.builder-add-superset-btn {
+  margin-top: 4px;
   margin-bottom: 18px;
 }
 

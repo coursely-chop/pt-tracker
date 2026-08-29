@@ -7,6 +7,7 @@ import type { ExerciseTarget, Load } from "../types";
 const LOAD_KINDS: { kind: Load["kind"]; label: string }[] = [
   { kind: "freeWeight", label: "Free Weight" },
   { kind: "band", label: "Band" },
+  { kind: "loopBand", label: "Loop Band" },
   { kind: "bodyweight", label: "Bodyweight" },
 ];
 
@@ -16,6 +17,8 @@ function defaultLoadForKind(kind: Load["kind"]): Load {
       return { kind: "freeWeight", lbs: 5 };
     case "band":
       return { kind: "band", bands: [] };
+    case "loopBand":
+      return { kind: "loopBand", strengths: [] };
     case "bodyweight":
       return { kind: "bodyweight" };
   }

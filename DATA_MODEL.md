@@ -50,8 +50,9 @@ warmupLoad: Load | { left: Load; right: Load } | null;  // null = linked (comput
 
 `warmupLoad` is null by default — "linked" — meaning warmup is always computed live as 50-75% of whatever `target.load` (or, for asymmetric exercises, `target.sides.left/right.load`) currently is. `getWarmupLines()` finds the closest thing to actually grab from owned equipment:
 
-- **Free weight:** `pickWarmupWeight()` picks whichever of [`OWNED_FREE_WEIGHTS`](src/lib/equipment.ts) (currently hardcoded — no settings screen yet — as `[3, 10]`, the two dumbbell pairs actually owned) best satisfies the range — the heaviest one that actually falls inside it, or if none do (a real gap in a sparse set), the closest one, tie-breaking toward lighter as the safer direction to be off in.
+- **Free weight:** `pickWarmupWeight()` picks whichever owned dumbbell or kettlebell (the Equipment screen — see `## equipment` below) best satisfies the range — the heaviest one that actually falls inside it, or if none do (a real gap in a sparse set), the closest one, tie-breaking toward lighter as the safer direction to be off in.
 - **Band:** `pickWarmupBand()` does the same search over every combination of owned bands (see `BAND_WEIGHTS`/`BAND_COLORS`), by total resistance rather than color — same in-range/closest preference, with an added tie-break toward fewer bands (simpler to grab) before falling back to lighter.
+- **Loop band:** `pickWarmupLoopBand()` shares its combo-search core with `pickWarmupBand()` (see `Load` above), just summing ordinal ranks instead of real lbs — a working `["moderate"]` resolves to `["light"]` when all three are owned, one level lighter.
 - **Bodyweight** (or no load) has nothing to scale — it warms up as bodyweight too, which falls out of the math rather than needing a special case.
 - **Asymmetric exercises** (`target.sides`) compute each side independently and show both, the same way the working line does — a single number would misrepresent two genuinely different targets.
 
@@ -94,9 +95,12 @@ Weight isn't always a plain number — the note mixes free weights and resistanc
 { kind: "freeWeight", lbs: number }
 { kind: "band", bands: string[] }
 { kind: "bodyweight" }
+{ kind: "loopBand", strengths: ("light" | "moderate" | "strong")[] }
 ```
 
 A band's equivalent weight isn't stored — it's a fixed property of the bands themselves (yellow=10, green=20, blue=30, black=40, red=50 lbs, owned pairs sum when stacked), computed on the fly by `computeBandWeight()` in `lib/equipment.ts` from whichever colors are in `bands[]`. Storing a number here would let it drift out of sync with the real bands; this way there's exactly one place the weight-per-color mapping lives, and every band-loaded exercise's displayed weight, history point, and edit-mode UI all derive from it. (Earlier drafts stored `equivalentLbs` as an independent, manually-set number, plus a `homeEquivalentLbs` for a "different bands at home" case — both are gone now that there's one canonical home band set with fixed weights.)
+
+`loopBand` is a second, separate kind of band (e.g. Lateral Band Walks) — a closed loop, often worn multiple at once (e.g. light + strong together), so like `band` above it's an array rather than a single value; unlike `band`, though, there's no real lbs weight to sum, just an ordinal ranking (see `computeLoopBandWeight()`). Kept as its own `Load` kind (not folded into `band`) even though the two catalogs' color names happen to overlap ("blue", "black") — a loop band and a tube band are physically different equipment, and `Equipment.ownedLoopBands` is tracked separately from `ownedBands` for the same reason. Its warmup uses `pickWarmupLoopBand()` in `lib/equipment.ts`, which shares its combo-search core with `pickWarmupBand()`, substituting ordinal rank (light=1/moderate=2/strong=3) for real weight.
 
 ### Asymmetric sides: Resistance Band Curls & Single Arm Band Kick-Backs
 
@@ -146,7 +150,7 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 }
 ```
 
-`slots[].exerciseIds` is an array (not a single id) specifically to support the tricep-extension/kick-back alternate without special-casing it.
+`slots[].exerciseIds` is an array (not a single id) so a slot can hold a primary exercise plus alternates (e.g. tricep-extension/kick-back) — the Workout Builder (PRD §9) reads and writes this array directly, so alternates added or removed there round-trip the same way as the seeded ones.
 
 ## `completions[]`
 
@@ -179,10 +183,10 @@ Full CRUD now: add, edit text, pin/unpin, delete (with confirmation, since it's 
 What's actually owned, feeding the computed-warmup logic in "Computed warmup weight" above — a single object, not a list, since there's exactly one home setup:
 
 ```
-{ ownedDumbbells: number[], ownedKettlebells: number[], ownedBands: string[] }
+{ ownedDumbbells: number[], ownedKettlebells: number[], ownedBands: string[], ownedLoopBands: string[] }
 ```
 
-`ownedDumbbells` and `ownedKettlebells` are both plain, user-editable lists of lbs values — kept separate because they carry a different real-world assumption: a dumbbell entry means an owned *pair* (enter "10" for a 10 lb pair, not the combined 20), while a kettlebell entry means one. `ownedBands` is a subset of the fixed color catalog in `BAND_WEIGHTS`/`BAND_COLORS` (`lib/equipment.ts`) — which colors exist and what each weighs is physical and not editable, only which ones you actually have is. All three were hardcoded before the Equipment screen existed (`OWNED_FREE_WEIGHTS` for what's now the dumbbell list, no kettlebell concept at all, and bands implicitly assumed all-owned); migrating an older snapshot without this field — or with the pre-split single `ownedFreeWeights` list from an earlier version of this screen — defaults or reshapes to those same values, so nobody's computed warmup results changed the moment either shipped.
+`ownedDumbbells` and `ownedKettlebells` are both plain, user-editable lists of lbs values — kept separate because they carry a different real-world assumption: a dumbbell entry means an owned *pair* (enter "10" for a 10 lb pair, not the combined 20), while a kettlebell entry means one. `ownedBands` is a subset of the fixed color catalog in `BAND_WEIGHTS`/`BAND_COLORS` (`lib/equipment.ts`) — which colors exist and what each weighs is physical and not editable, only which ones you actually have is. `ownedLoopBands` is the same idea for the separate closed-loop-band catalog (`LOOP_BAND_STRENGTHS`/`LOOP_BAND_HEX`) — kept apart from `ownedBands` since a loop band and a tube band are different physical equipment even where a color name repeats (see `Load` above). All were hardcoded before the Equipment screen existed (`OWNED_FREE_WEIGHTS` for what's now the dumbbell list, no kettlebell or loop-band concept at all, and tube bands implicitly assumed all-owned); migrating an older snapshot without a field — or with the pre-split single `ownedFreeWeights` list from an earlier version of this screen — defaults or reshapes to those same values, so nobody's computed warmup results changed the moment any of these shipped.
 
 Deliberately **narrow in scope**: this only feeds warmup suggestions. It doesn't restrict what you can set as a *working* target — the working free-weight stepper stays unrestricted (any 2.5 lb step), and the working band picker in Edit Mode still shows all five colors regardless of ownership. Prescribing a working target isn't the same claim as "grab this for warmup right now," so only the latter needed the ownership check.
 

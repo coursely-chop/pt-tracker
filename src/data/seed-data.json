@@ -290,9 +290,71 @@
       "progression": [],
       "links": {},
       "warmupLoad": null
+    },
+    {
+      "id": "lateral-band-walks",
+      "name": "Lateral Band Walks",
+      "target": {
+        "repRange": {
+          "min": 10,
+          "max": 10
+        },
+        "perSide": false,
+        "reps": 10,
+        "load": {
+          "kind": "loopBand",
+          "strengths": [
+            "moderate"
+          ]
+        },
+        "sides": null
+      },
+      "warmupReps": 8,
+      "warmupLoad": null,
+      "progressionRule": null,
+      "cues": [],
+      "tags": [
+        "legs",
+        "glutes"
+      ],
+      "links": {},
+      "progression": []
     }
   ],
   "workouts": [
+    {
+      "id": "home-strength-workout-1",
+      "name": "Home Strength Workout #1",
+      "structure": {
+        "dynamicStretching": "",
+        "protocol": {
+          "workingSets": 2,
+          "warmupSets": 1,
+          "restBetweenExercisesSec": {
+            "min": 15,
+            "max": 30
+          },
+          "restBetweenSupersetsSec": {
+            "min": 60,
+            "max": 90
+          },
+          "notes": "Complete all sets of a superset before moving on to the next superset."
+        }
+      },
+      "supersets": [
+        {
+          "order": 1,
+          "slots": [
+            {
+              "order": 1,
+              "exerciseIds": [
+                "lateral-band-walks"
+              ]
+            }
+          ]
+        }
+      ]
+    },
     {
       "id": "home-strength-workout-2",
       "name": "Home Strength Workout #2",
@@ -382,6 +444,11 @@
       "blue",
       "black",
       "red"
+    ],
+    "ownedLoopBands": [
+      "light",
+      "moderate",
+      "strong"
     ]
   }
 }

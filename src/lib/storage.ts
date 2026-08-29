@@ -1,5 +1,5 @@
 import seedData from "../data/seed-data.json";
-import { BAND_COLORS, DEFAULT_OWNED_DUMBBELLS, DEFAULT_OWNED_KETTLEBELLS } from "./equipment";
+import { BAND_COLORS, DEFAULT_OWNED_DUMBBELLS, DEFAULT_OWNED_KETTLEBELLS, DEFAULT_OWNED_LOOP_BANDS } from "./equipment";
 import type { Equipment, Exercise, Note, SeedData, Workout, WorkoutCompletion } from "../types";
 
 /** Equipment shape before dumbbells/kettlebells were tracked separately — a
@@ -11,6 +11,7 @@ interface LegacyEquipment {
   ownedDumbbells?: number[];
   ownedKettlebells?: number[];
   ownedBands?: string[];
+  ownedLoopBands?: string[];
 }
 
 const STORAGE_KEY = "pt-tracker-data";
@@ -69,6 +70,7 @@ export function loadData(): SeedData {
           ownedDumbbells: legacy?.ownedDumbbells ?? legacy?.ownedFreeWeights ?? DEFAULT_OWNED_DUMBBELLS,
           ownedKettlebells: legacy?.ownedKettlebells ?? DEFAULT_OWNED_KETTLEBELLS,
           ownedBands: legacy?.ownedBands ?? [...BAND_COLORS],
+          ownedLoopBands: legacy?.ownedLoopBands ?? DEFAULT_OWNED_LOOP_BANDS,
         };
       })(),
     };

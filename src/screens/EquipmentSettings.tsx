@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Stepper, WEIGHT_STEP } from "../components/EditModeSheet";
-import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS } from "../lib/equipment";
+import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
+import { capitalize } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 interface WeightListProps {
@@ -84,6 +85,7 @@ export default function EquipmentSettings() {
     addOwnedKettlebell,
     removeOwnedKettlebell,
     toggleOwnedBand,
+    toggleOwnedLoopBand,
   } = useData();
 
   return (
@@ -119,7 +121,7 @@ export default function EquipmentSettings() {
       />
 
       <div className="detail-section">
-        <div className="detail-section-label">Bands</div>
+        <div className="detail-section-label">Tube Bands</div>
         <div className="detail-hint">Tap to mark which resistance bands you actually own.</div>
         <div className="band-picker">
           {BAND_COLORS.map((color) => {
@@ -134,6 +136,31 @@ export default function EquipmentSettings() {
                 aria-pressed={owned}
                 aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs${owned ? ", owned" : ""}`}
                 title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="detail-section">
+        <div className="detail-section-label">Loop Bands</div>
+        <div className="detail-hint">
+          Closed-loop bands, worn one at a time (e.g. for lateral band walks) — a separate set from the tube bands
+          above, even where a color name repeats.
+        </div>
+        <div className="band-picker">
+          {LOOP_BAND_STRENGTHS.map((strength) => {
+            const owned = equipment.ownedLoopBands.includes(strength);
+            return (
+              <button
+                key={strength}
+                type="button"
+                className={`band-swatch${owned ? " selected" : ""}`}
+                style={{ backgroundColor: LOOP_BAND_HEX[strength] }}
+                onClick={() => toggleOwnedLoopBand(strength)}
+                aria-pressed={owned}
+                aria-label={`${strength} loop band${owned ? ", owned" : ""}`}
+                title={capitalize(strength)}
               />
             );
           })}

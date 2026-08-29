@@ -83,6 +83,7 @@ interface DataContextValue {
   addOwnedKettlebell: (lbs: number) => void;
   removeOwnedKettlebell: (lbs: number) => void;
   toggleOwnedBand: (color: string) => void;
+  toggleOwnedLoopBand: (strength: string) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -233,6 +234,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveEquipment({ ...data.equipment, ownedBands }));
   }
 
+  function toggleOwnedLoopBand(strength: string) {
+    const owned = data.equipment.ownedLoopBands;
+    const ownedLoopBands = owned.includes(strength) ? owned.filter((s) => s !== strength) : [...owned, strength];
+    setData(saveEquipment({ ...data.equipment, ownedLoopBands }));
+  }
+
   const value: DataContextValue = {
     exercises: data.exercises,
     workouts: data.workouts,
@@ -263,6 +270,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addOwnedKettlebell,
     removeOwnedKettlebell,
     toggleOwnedBand,
+    toggleOwnedLoopBand,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

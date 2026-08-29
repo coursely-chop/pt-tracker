@@ -1,4 +1,3 @@
-import { BAND_HEX } from "../lib/equipment";
 import type { SetLines as SetLinesData } from "../lib/format";
 
 /** Small read-only color bars standing in for spelled-out band names ("Yellow
@@ -10,13 +9,15 @@ import type { SetLines as SetLinesData } from "../lib/format";
  * which read as broken rather than intentional). Rendered as one flat
  * horizontal row, not stacked into columns — with its own line, even 5 bars
  * (the most any exercise could ever have) comfortably fits the narrowest
- * panel width, so the column-balancing this used to need is gone. */
+ * panel width, so the column-balancing this used to need is gone. Colors
+ * arrive pre-resolved to hex (lib/format.ts's loadToRow) since they can come
+ * from either the tube-band or loop-band catalog. */
 function BandDots({ colors }: { colors: string[] }) {
   if (colors.length === 0) return null;
   return (
     <div className="band-dots">
       {colors.map((color, i) => (
-        <span key={i} className="band-dot" style={{ backgroundColor: BAND_HEX[color] }} aria-hidden="true" />
+        <span key={i} className="band-dot" style={{ backgroundColor: color }} aria-hidden="true" />
       ))}
     </div>
   );
@@ -42,7 +43,7 @@ export function SetLinesRows({ lines }: { lines: SetLinesData }) {
             <span className="set-line-text">{row.text}</span>
             <span className="set-line-reps"> x {row.reps}</span>
           </div>
-          <BandDots colors={row.bandColors} />
+          <BandDots colors={row.swatches} />
         </div>
       ))}
     </div>

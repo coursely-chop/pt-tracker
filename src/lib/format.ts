@@ -1,5 +1,5 @@
-import { computeBandWeight, pickWarmupBand, pickWarmupWeight } from "./equipment";
-import type { Equipment, Exercise, ExerciseTarget, Load } from "../types";
+import { BAND_HEX, LOOP_BAND_HEX, computeBandWeight, pickWarmupBand, pickWarmupLoopBand, pickWarmupWeight } from "./equipment";
+import type { Equipment, Exercise, ExerciseTarget, Load, LoopBandLoad } from "../types";
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -16,7 +16,11 @@ export function formatReps(reps: number, repUnit?: string): string {
 export interface SetLineRow {
   sideLabel?: "L" | "R";
   text: string;
-  bandColors: string[];
+  /** Resolved hex colors for the small dots under this row, already looked up
+   * from whichever catalog applies (tube band vs. loop band) — SetLines.tsx
+   * just paints them, it doesn't need to know which kind of band they came
+   * from. */
+  swatches: string[];
   reps: number;
 }
 
@@ -27,11 +31,15 @@ export interface SetLines {
   rows: SetLineRow[];
 }
 
-function loadToRow(load: Load | null): { text: string; bandColors: string[] } {
-  if (!load || load.kind === "bodyweight") return { text: "Bodyweight", bandColors: [] };
-  if (load.kind === "freeWeight") return { text: `${load.lbs} lbs`, bandColors: [] };
+function loadToRow(load: Load | null): { text: string; swatches: string[] } {
+  if (!load || load.kind === "bodyweight") return { text: "Bodyweight", swatches: [] };
+  if (load.kind === "freeWeight") return { text: `${load.lbs} lbs`, swatches: [] };
+  if (load.kind === "loopBand") {
+    const label = load.strengths.map(capitalize).join(" + ");
+    return { text: label || "—", swatches: load.strengths.map((s) => LOOP_BAND_HEX[s]) };
+  }
   const weight = computeBandWeight(load.bands);
-  return { text: weight > 0 ? `${weight} lbs` : "—", bandColors: load.bands };
+  return { text: weight > 0 ? `${weight} lbs` : "—", swatches: load.bands.map((color) => BAND_HEX[color]) };
 }
 
 export function getWorkingLines(sets: number, target: ExerciseTarget): SetLines {
@@ -65,6 +73,10 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment): Load
     const owned = [...equipment.ownedDumbbells, ...equipment.ownedKettlebells];
     const lbs = pickWarmupWeight(load.lbs, owned);
     return lbs > 0 ? { kind: "freeWeight", lbs } : { kind: "bodyweight" };
+  }
+  if (load.kind === "loopBand") {
+    const strengths = pickWarmupLoopBand(load.strengths, equipment.ownedLoopBands);
+    return strengths.length > 0 ? { kind: "loopBand", strengths: strengths as LoopBandLoad["strengths"] } : { kind: "bodyweight" };
   }
   return { kind: "band", bands: pickWarmupBand(load.bands, equipment.ownedBands) };
 }

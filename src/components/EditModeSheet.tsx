@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { capitalize, computeWarmupLoad, todayISO } from "../lib/format";
-import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, computeBandWeight } from "../lib/equipment";
+import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, computeBandWeight } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
-import type { BandLoad, Exercise, ExerciseTarget, Load, ProgressionEntry, SideTarget } from "../types";
+import type { BandLoad, Exercise, ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget } from "../types";
 
 /** Read-only text for the "Match Working" preview — no band dots needed here,
  * unlike the glanceable views (Workout Overview, Movement Detail); a plain
@@ -10,6 +10,7 @@ import type { BandLoad, Exercise, ExerciseTarget, Load, ProgressionEntry, SideTa
 function formatLoadPreview(load: Load): string {
   if (load.kind === "bodyweight") return "Bodyweight";
   if (load.kind === "freeWeight") return `${load.lbs} lbs`;
+  if (load.kind === "loopBand") return load.strengths.map(capitalize).join(" & ") || "—";
   const weight = computeBandWeight(load.bands);
   const label = load.bands.map(capitalize).join(" & ");
   return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
@@ -338,6 +339,41 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
             + Add {lbs} lbs to your equipment
           </button>
         )}
+      </div>
+    );
+  }
+
+  if (load.kind === "loopBand") {
+    const loopLoad = load;
+    const loopStrengths = loopLoad.strengths as string[];
+    const toggleStrength = (strength: string) => {
+      const strengths = loopStrengths.includes(strength)
+        ? loopStrengths.filter((s) => s !== strength)
+        : [...loopStrengths, strength];
+      setLoad({ kind: "loopBand", strengths: strengths as LoopBandLoad["strengths"] });
+    };
+    const label = loopLoad.strengths.map(capitalize).join(" + ");
+
+    return (
+      <div className="load-editor">
+        <div className="band-picker">
+          {LOOP_BAND_STRENGTHS.map((strength) => {
+            const selected = loopStrengths.includes(strength);
+            return (
+              <button
+                key={strength}
+                type="button"
+                className={`band-swatch${selected ? " selected" : ""}`}
+                style={{ backgroundColor: LOOP_BAND_HEX[strength] }}
+                onClick={() => toggleStrength(strength)}
+                aria-pressed={selected}
+                aria-label={`${strength} loop band`}
+                title={capitalize(strength)}
+              />
+            );
+          })}
+          <div className="band-weight">{label || "—"}</div>
+        </div>
       </div>
     );
   }

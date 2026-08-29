@@ -7,7 +7,9 @@ import type { Superset, Workout, WorkoutProtocol } from "../types";
 
 interface BuilderSlot {
   key: string;
-  exerciseId: string;
+  /** First id is the primary exercise; any further ids are alternates the
+   * viewer can swipe to on Workout Overview (see .slot[data-swipe] there). */
+  exerciseIds: string[];
 }
 
 interface BuilderSuperset {
@@ -27,11 +29,6 @@ function newKey(): string {
   return crypto.randomUUID();
 }
 
-/** Existing workouts store one-or-more exerciseIds per slot (>1 means alternates,
- * e.g. Tricep Extension / Kick-Back). This builder only supports one exercise per
- * slot — see the alternates note in Create New Home Workout — so editing collapses
- * any alternate slot down to its first (primary) exercise. hasAlternateSlots lets
- * the page disclose that up front rather than silently dropping data on save. */
 function toBuilderSupersets(workout: Workout): BuilderSuperset[] {
   return [...workout.supersets]
     .sort((a, b) => a.order - b.order)
@@ -39,18 +36,22 @@ function toBuilderSupersets(workout: Workout): BuilderSuperset[] {
       key: newKey(),
       slots: [...superset.slots]
         .sort((a, b) => a.order - b.order)
-        .map((slot) => ({ key: newKey(), exerciseId: slot.exerciseIds[0] })),
+        .map((slot) => ({ key: newKey(), exerciseIds: slot.exerciseIds })),
     }));
 }
 
-function hasAlternateSlots(workout: Workout): boolean {
-  return workout.supersets.some((s) => s.slots.some((slot) => slot.exerciseIds.length > 1));
+/** All exercise ids already used anywhere in a superset (primary or alternate) —
+ * what the exercise picker excludes, so the same exercise can't end up as two
+ * slots' primary, or as its own slot's alternate, within one superset. */
+function supersetExerciseIds(superset: BuilderSuperset): string[] {
+  return superset.slots.flatMap((slot) => slot.exerciseIds);
 }
 
 /** A guided, single-scrolling-page flow mirroring the underlying structure directly:
- * a workout is a name + protocol + an ordered list of supersets, each holding one
- * exercise per slot (no alternates here — the existing alternate exercises stay
- * defined directly in the data). Reordering and removing use one consistent ↑/↓ +
+ * a workout is a name + protocol + an ordered list of supersets, each holding an
+ * ordered list of slots. A slot is a primary exercise plus optional alternates
+ * (swipeable on Workout Overview) — added the same way, via the exercise picker,
+ * scoped to that one slot. Reordering and removing use one consistent ↑/↓ +
  * × control cluster rather than drag-and-drop, consistent with everything else in
  * this app being hand-rolled without a gesture/drag library.
  *
@@ -74,6 +75,7 @@ export default function WorkoutBuilder() {
   );
   const [dynamicStretching, setDynamicStretching] = useState(() => existingWorkout?.structure.dynamicStretching ?? "");
   const [pickerForSuperset, setPickerForSuperset] = useState<string | null>(null);
+  const [pickerForAlternate, setPickerForAlternate] = useState<{ supersetKey: string; slotKey: string } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (isEditing && !existingWorkout) {
@@ -108,7 +110,39 @@ export default function WorkoutBuilder() {
 
   function addSlot(supersetKey: string, exerciseId: string) {
     setSupersets(
-      supersets.map((s) => (s.key === supersetKey ? { ...s, slots: [...s.slots, { key: newKey(), exerciseId }] } : s))
+      supersets.map((s) =>
+        s.key === supersetKey ? { ...s, slots: [...s.slots, { key: newKey(), exerciseIds: [exerciseId] }] } : s
+      )
+    );
+  }
+
+  function addAlternate(supersetKey: string, slotKey: string, exerciseId: string) {
+    setSupersets(
+      supersets.map((s) =>
+        s.key === supersetKey
+          ? {
+              ...s,
+              slots: s.slots.map((sl) =>
+                sl.key === slotKey ? { ...sl, exerciseIds: [...sl.exerciseIds, exerciseId] } : sl
+              ),
+            }
+          : s
+      )
+    );
+  }
+
+  function removeAlternate(supersetKey: string, slotKey: string, exerciseId: string) {
+    setSupersets(
+      supersets.map((s) =>
+        s.key === supersetKey
+          ? {
+              ...s,
+              slots: s.slots.map((sl) =>
+                sl.key === slotKey ? { ...sl, exerciseIds: sl.exerciseIds.filter((id) => id !== exerciseId) } : sl
+              ),
+            }
+          : s
+      )
     );
   }
 
@@ -139,7 +173,7 @@ export default function WorkoutBuilder() {
     if (!canSave) return;
     const finalSupersets: Superset[] = nonEmptySupersets.map((s, i) => ({
       order: i + 1,
-      slots: s.slots.map((sl, j) => ({ order: j + 1, exerciseIds: [sl.exerciseId] })),
+      slots: s.slots.map((sl, j) => ({ order: j + 1, exerciseIds: sl.exerciseIds })),
     }));
     const input = {
       name: name.trim(),
@@ -180,13 +214,6 @@ export default function WorkoutBuilder() {
         autoFocus={!isEditing}
       />
 
-      {existingWorkout && hasAlternateSlots(existingWorkout) && (
-        <div className="detail-hint builder-alternate-warning">
-          This workout has an alternate-exercise slot. This builder only supports one exercise per slot — saving will
-          keep just the primary exercise shown below and drop the alternate.
-        </div>
-      )}
-
       {supersets.map((superset, si) => (
         <div key={superset.key} className="builder-superset">
           <div className="builder-superset-header">
@@ -224,40 +251,68 @@ export default function WorkoutBuilder() {
           </div>
 
           {superset.slots.map((slot, sli) => {
-            const exercise = getExercise(slot.exerciseId);
+            const [primaryId, ...alternateIds] = slot.exerciseIds;
+            const exercise = getExercise(primaryId);
             return (
-              <div key={slot.key} className="builder-slot-row">
-                <div className="builder-slot-name">{exercise?.name ?? "Unknown exercise"}</div>
-                <div className="builder-slot-controls">
-                  <div className="swipe-cluster">
+              <div key={slot.key} className="builder-slot-group">
+                <div className="builder-slot-row">
+                  <div className="builder-slot-name">{exercise?.name ?? "Unknown exercise"}</div>
+                  <div className="builder-slot-controls">
+                    <div className="swipe-cluster">
+                      <button
+                        type="button"
+                        className="swipe-cluster-btn"
+                        onClick={() => moveSlot(superset.key, sli, -1)}
+                        disabled={sli === 0}
+                        aria-label="Move exercise up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="swipe-cluster-btn"
+                        onClick={() => moveSlot(superset.key, sli, 1)}
+                        disabled={sli === superset.slots.length - 1}
+                        aria-label="Move exercise down"
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      className="swipe-cluster-btn"
-                      onClick={() => moveSlot(superset.key, sli, -1)}
-                      disabled={sli === 0}
-                      aria-label="Move exercise up"
+                      className="cue-remove"
+                      onClick={() => removeSlot(superset.key, slot.key)}
+                      aria-label={`Remove ${exercise?.name ?? "exercise"}`}
                     >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="swipe-cluster-btn"
-                      onClick={() => moveSlot(superset.key, sli, 1)}
-                      disabled={sli === superset.slots.length - 1}
-                      aria-label="Move exercise down"
-                    >
-                      ↓
+                      ×
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    className="cue-remove"
-                    onClick={() => removeSlot(superset.key, slot.key)}
-                    aria-label={`Remove ${exercise?.name ?? "exercise"}`}
-                  >
-                    ×
-                  </button>
                 </div>
+
+                {alternateIds.map((altId) => {
+                  const alt = getExercise(altId);
+                  return (
+                    <div key={altId} className="builder-alternate-row">
+                      <div className="builder-alternate-name">↳ {alt?.name ?? "Unknown exercise"}</div>
+                      <button
+                        type="button"
+                        className="cue-remove"
+                        onClick={() => removeAlternate(superset.key, slot.key, altId)}
+                        aria-label={`Remove alternate ${alt?.name ?? "exercise"}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  className="add-note-trigger builder-add-alternate-btn"
+                  onClick={() => setPickerForAlternate({ supersetKey: superset.key, slotKey: slot.key })}
+                >
+                  + Add Alternate
+                </button>
               </div>
             );
           })}
@@ -378,7 +433,25 @@ export default function WorkoutBuilder() {
           onClose={() => setPickerForSuperset(null)}
           onSelect={(exerciseId) => addSlot(pickerForSuperset, exerciseId)}
           excludeExerciseIds={
-            supersets.find((s) => s.key === pickerForSuperset)?.slots.map((sl) => sl.exerciseId) ?? []
+            (() => {
+              const superset = supersets.find((s) => s.key === pickerForSuperset);
+              return superset ? supersetExerciseIds(superset) : [];
+            })()
+          }
+        />
+      )}
+
+      {pickerForAlternate && (
+        <ExercisePickerSheet
+          onClose={() => setPickerForAlternate(null)}
+          onSelect={(exerciseId) =>
+            addAlternate(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseId)
+          }
+          excludeExerciseIds={
+            (() => {
+              const superset = supersets.find((s) => s.key === pickerForAlternate.supersetKey);
+              return superset ? supersetExerciseIds(superset) : [];
+            })()
           }
         />
       )}

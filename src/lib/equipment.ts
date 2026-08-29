@@ -4,6 +4,7 @@
  * pair — no kettlebells — so that's what a pre-Equipment snapshot migrates to. */
 export const DEFAULT_OWNED_DUMBBELLS = [3, 10];
 export const DEFAULT_OWNED_KETTLEBELLS: number[] = [];
+export const DEFAULT_OWNED_LOOP_BANDS = ["light", "moderate", "strong"];
 
 /**
  * Resistance bands actually owned, and each one's equivalent weight in lbs.
@@ -35,6 +36,31 @@ export function computeBandWeight(bands: string[]): number {
 }
 
 /**
+ * Closed-loop bands (e.g. for lateral band walks) — a separate, smaller
+ * catalog from the tube BAND_WEIGHTS above, and often worn multiple at once
+ * (see computeLoopBandWeight). "strong" reuses the same dark-grey stand-in as
+ * tube "black" — same reasoning: true black wouldn't read against this app's
+ * background.
+ */
+export const LOOP_BAND_STRENGTHS = ["light", "moderate", "strong"];
+
+export const LOOP_BAND_HEX: Record<string, string> = {
+  light: "#9ca3af",
+  moderate: "#3b82f6",
+  strong: "#52525b",
+};
+
+/** Loop bands have no real weight, only a relative ordering — this ordinal
+ * rank (1/2/3) stands in for weight wherever combined strength needs to be
+ * compared or summed (warmup range-search), the same role BAND_WEIGHTS plays
+ * for tube bands, just not a physical lbs value. */
+const LOOP_BAND_RANK: Record<string, number> = { light: 1, moderate: 2, strong: 3 };
+
+export function computeLoopBandWeight(strengths: string[]): number {
+  return strengths.reduce((total, s) => total + (LOOP_BAND_RANK[s] ?? 0), 0);
+}
+
+/**
  * Picks the owned weight to grab for a warmup set targeting 50-75% of the
  * working weight. Prefers a weight that actually falls in range; if none does
  * (a real gap with a sparse set like 3s/10s), picks whichever owned weight is
@@ -59,26 +85,27 @@ export function pickWarmupWeight(workingLbs: number, owned: number[]): number {
   });
 }
 
-/** Every combination of owned bands (including none, for the bodyweight-equivalent
- * case), used by pickWarmupBand to search for the best warmup combo the same way
- * a working set's band combo is chosen — by total resistance, not by color. */
-function bandCombinations(owned: string[]): string[][] {
-  return owned.reduce<string[][]>((combos, color) => [...combos, ...combos.map((c) => [...c, color])], [[]]);
+/** Every combination of an owned set (including none, for the bodyweight-equivalent
+ * case) — shared by pickWarmupBand and pickWarmupLoopBand to search for the best
+ * warmup combo the same way a working set's combo is chosen: by total resistance,
+ * not by which specific colors/strengths. */
+function combinations(owned: string[]): string[][] {
+  return owned.reduce<string[][]>((combos, item) => [...combos, ...combos.map((c) => [...c, item])], [[]]);
 }
 
 /**
- * Band equivalent of pickWarmupWeight: picks the combo of owned bands whose
- * combined resistance best targets 50-75% of the working combo's weight.
- * Same preference order — a combo actually in range, or the numerically
- * closest one, tying toward fewer bands (simpler to grab) then lighter
- * (safer to be off in that direction).
+ * Shared core of pickWarmupBand/pickWarmupLoopBand: picks the combo of owned
+ * items whose combined weight (via weightFn) best targets 50-75% of the
+ * working combo's weight. Prefers a combo actually in range (the heaviest
+ * one, mirroring pickWarmupWeight), or the numerically closest one, tying
+ * toward fewer items (simpler to grab) then lighter (safer to be off in that
+ * direction).
  */
-export function pickWarmupBand(workingBands: string[], owned: string[]): string[] {
-  const workingLbs = computeBandWeight(workingBands);
-  const lo = workingLbs * 0.5;
-  const hi = workingLbs * 0.75;
+function pickWarmupCombo(workingWeight: number, owned: string[], weightFn: (combo: string[]) => number): string[] {
+  const lo = workingWeight * 0.5;
+  const hi = workingWeight * 0.75;
 
-  const candidates = bandCombinations(owned).map((combo) => ({ combo, weight: computeBandWeight(combo) }));
+  const candidates = combinations(owned).map((combo) => ({ combo, weight: weightFn(combo) }));
 
   const inRange = candidates.filter((c) => c.weight >= lo && c.weight <= hi);
   const pool = inRange.length > 0 ? inRange : candidates;
@@ -88,7 +115,6 @@ export function pickWarmupBand(workingBands: string[], owned: string[]): string[
     const d = distance(c.weight);
     const bestD = distance(best.weight);
     if (inRange.length > 0) {
-      // Among in-range combos, prefer the heaviest (mirrors pickWarmupWeight).
       if (c.weight !== best.weight) return c.weight > best.weight ? c : best;
     } else if (d !== bestD) {
       return d < bestD ? c : best;
@@ -96,4 +122,16 @@ export function pickWarmupBand(workingBands: string[], owned: string[]): string[
     if (c.combo.length !== best.combo.length) return c.combo.length < best.combo.length ? c : best;
     return c.weight < best.weight ? c : best;
   }).combo;
+}
+
+export function pickWarmupBand(workingBands: string[], owned: string[]): string[] {
+  return pickWarmupCombo(computeBandWeight(workingBands), owned, computeBandWeight);
+}
+
+/** Loop-band equivalent of pickWarmupBand: same combo search, using ordinal
+ * rank (computeLoopBandWeight) in place of real lbs. A working ["moderate"]
+ * with all three owned resolves to ["light"] — one level lighter, matching
+ * how the other warmup computations already work. */
+export function pickWarmupLoopBand(workingStrengths: string[], owned: string[]): string[] {
+  return pickWarmupCombo(computeLoopBandWeight(workingStrengths), owned, computeLoopBandWeight);
 }
