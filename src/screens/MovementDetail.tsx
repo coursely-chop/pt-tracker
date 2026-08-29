@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { formatDate, formatLoad, formatWarmupLine, formatWorkingLine } from "../lib/format";
+import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
+import { formatDate, getWarmupLines, getWorkingLines } from "../lib/format";
 import { notesForExercise } from "../lib/notes";
 import { useData } from "../lib/DataContext";
 import type { Note } from "../types";
@@ -39,6 +40,7 @@ export default function MovementDetail() {
     updateNoteText,
     toggleNotePinned,
     deleteNote,
+    equipment,
   } = useData();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   // Drives the entrance animation's direction — set right before navigating,
@@ -80,7 +82,8 @@ export default function MovementDetail() {
   const previousExerciseId = slotIndex > 0 ? slots[slotIndex - 1]?.exerciseIds[0] : undefined;
   const nextExerciseId = slotIndex >= 0 ? slots[slotIndex + 1]?.exerciseIds[0] : undefined;
 
-  const warmupLine = formatWarmupLine(protocol.warmupSets, exercise);
+  const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment);
+  const workingLines = getWorkingLines(protocol.workingSets, target);
   const historyPath = `/workouts/${workout.id}/exercises/${exercise.id}/history`;
   const exerciseNotes = notesForExercise(notes, exercise.id);
   // While a note is being added or edited, the primary actions below step aside —
@@ -236,36 +239,44 @@ export default function MovementDetail() {
           </details>
         )}
 
-        {warmupLine && (
+        {warmupLines ? (
+          <button
+            type="button"
+            className="detail-section detail-set-lines-btn"
+            aria-label={`Edit ${exercise.name} warmup`}
+            disabled={noteEditorOpen}
+            onClick={() => openEditMode(exercise.id)}
+          >
+            <div className="detail-section-label">
+              <SetLinesLabel label="Warmup" sets={warmupLines.sets} />
+            </div>
+            <SetLinesRows lines={warmupLines} />
+          </button>
+        ) : (
           <div className="detail-section">
             <div className="detail-section-label">Warmup</div>
-            <div>{warmupLine}</div>
+            <div className="set-line-none">None required</div>
           </div>
         )}
 
-        <div className="detail-section">
-          <div className="detail-section-label">Working Sets</div>
-          {target.sides ? (
-            <div className="side-detail-grid">
-              <div>
-                <strong>Left</strong>
-                <div>
-                  {target.sides.left.reps} reps @ {formatLoad(target.sides.left.load)}
-                </div>
-                {target.sides.left.tempo && <div className="tempo-note">{target.sides.left.tempo}</div>}
-              </div>
-              <div>
-                <strong>Right</strong>
-                <div>
-                  {target.sides.right.reps} reps @ {formatLoad(target.sides.right.load)}
-                </div>
-                {target.sides.right.tempo && <div className="tempo-note">{target.sides.right.tempo}</div>}
-              </div>
+        <button
+          type="button"
+          className="detail-section detail-set-lines-btn"
+          aria-label={`Edit ${exercise.name} working set reps and weight`}
+          disabled={noteEditorOpen}
+          onClick={() => openEditMode(exercise.id)}
+        >
+          <div className="detail-section-label">
+            <SetLinesLabel label="Working" sets={protocol.workingSets} />
+          </div>
+          <SetLinesRows lines={workingLines} />
+          {target.sides && (target.sides.left.tempo || target.sides.right.tempo) && (
+            <div className="side-tempo-notes">
+              {target.sides.left.tempo && <div className="tempo-note">L: {target.sides.left.tempo}</div>}
+              {target.sides.right.tempo && <div className="tempo-note">R: {target.sides.right.tempo}</div>}
             </div>
-          ) : (
-            <div>{formatWorkingLine(protocol.workingSets, target)}</div>
           )}
-        </div>
+        </button>
 
         {exercise.asymmetryNote && <div className="note-callout">{exercise.asymmetryNote}</div>}
 
@@ -420,14 +431,6 @@ export default function MovementDetail() {
         </div>
 
         <div className="detail-actions">
-          <button
-            type="button"
-            className="edit-btn"
-            disabled={noteEditorOpen}
-            onClick={() => openEditMode(exercise.id)}
-          >
-            Edit reps/weight
-          </button>
           <Link
             to={historyPath}
             className={noteEditorOpen ? "disabled-link" : undefined}

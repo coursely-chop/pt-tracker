@@ -53,16 +53,22 @@ export interface Exercise {
   id: string;
   name: string;
   target: ExerciseTarget;
-  /** Free-text fallback, shown as-is when warmupSpec isn't present (or doesn't apply). */
-  warmup: string | null;
+  /** Rep count for warmup sets — the one thing about warmup that varies per
+   * exercise and isn't derivable from the working target. Null means this
+   * exercise has no warmup at all (and no computed line is shown). */
+  warmupReps: number | null;
   /**
-   * Present only for exercises where the warmup weight should be computed rather
-   * than read as a vague percentage. Only takes effect when target.load is
-   * freeWeight — see pickWarmupWeight in lib/equipment.ts.
+   * Null (the default) means warmup is "linked" — always computed live as
+   * 50-75% of the current working load, via Edit Mode's checkbox. Set it to
+   * "unlink" and warm up with an independent load instead, edited the same way
+   * as the working target: a flat Load for a symmetric exercise, or a left/right
+   * pair for the two asymmetric-by-injury exercises. Persists until re-linked.
    */
-  warmupSpec?: { reps: number; percentRange: RepRange };
+  warmupLoad: Load | { left: Load; right: Load } | null;
   progressionRule: string | null;
   cues: string[];
+  /** Freeform, e.g. "legs", "core" — powers the exercise picker's search in Create New Home Workout. */
+  tags: string[];
   asymmetryNote?: string;
   progression: ProgressionEntry[];
   links: ExerciseLinks;
@@ -127,9 +133,31 @@ export interface Note {
   pinned: boolean;
 }
 
+/**
+ * What's actually sitting in the closet — feeds the warmup computation in
+ * lib/equipment.ts (pickWarmupWeight/pickWarmupBand). Doesn't restrict what
+ * you can dial in for a *working* target: that stays free-form, since a
+ * working weight can be anything and shouldn't be capped by what's already
+ * on file. Dumbbells and kettlebells are tracked as separate lists (each just
+ * owned lbs values, editable — add/remove) because they carry a different
+ * real-world assumption: a dumbbell entry means an owned *pair*, a kettlebell
+ * entry means one. For warmup-picking purposes the distinction doesn't
+ * matter — either is just a weight you can grab — so pickWarmupWeight is
+ * given the two lists merged; the split only matters for how Equipment
+ * Settings displays and labels them. Bands are a subset of the fixed
+ * BAND_WEIGHTS catalog in lib/equipment.ts (color-to-weight is physical, not
+ * user-configurable — only *which* colors you own is).
+ */
+export interface Equipment {
+  ownedDumbbells: number[];
+  ownedKettlebells: number[];
+  ownedBands: string[];
+}
+
 export interface SeedData {
   exercises: Exercise[];
   workouts: Workout[];
   completions: WorkoutCompletion[];
   notes: Note[];
+  equipment: Equipment;
 }

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { formatDate, formatWarmupLine, formatWorkingLine, todayISO } from "../lib/format";
+import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
+import { formatDate, getWarmupLines, getWorkingLines, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 export default function WorkoutOverview() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const navigate = useNavigate();
-  const { getExercise, getWorkout, openEditMode, logWorkout } = useData();
+  const { getExercise, getWorkout, openEditMode, logWorkout, equipment } = useData();
   const workout = workoutId ? getWorkout(workoutId) : undefined;
   const [armed, setArmed] = useState(false);
 
@@ -35,55 +36,12 @@ export default function WorkoutOverview() {
       <Link to="/" className="back-link">
         ← Home Workouts
       </Link>
-      <h1 className="screen-title">{workout.name}</h1>
-
-      <div className="stretching-note">{workout.structure.dynamicStretching}</div>
-
-      {supersets.map((superset) => (
-        <div key={superset.order} className="superset">
-          <div className="superset-label">Superset {superset.order}</div>
-          {[...superset.slots]
-            .sort((a, b) => a.order - b.order)
-            .map((slot) => {
-              const hasAlternates = slot.exerciseIds.length > 1;
-              return (
-                <div key={slot.order} className="slot" data-swipe={hasAlternates}>
-                  {slot.exerciseIds.map((exerciseId) => {
-                    const exercise = getExercise(exerciseId);
-                    if (!exercise) return null;
-                    const warmupLine = formatWarmupLine(protocol.warmupSets, exercise);
-                    const workingLine = formatWorkingLine(protocol.workingSets, exercise.target);
-
-                    return (
-                      <div key={exerciseId} className="slot-card">
-                        <Link to={`/workouts/${workout.id}/exercises/${exerciseId}`} className="exercise-name">
-                          {exercise.name}
-                        </Link>
-                        <button
-                          type="button"
-                          className="set-lines-btn"
-                          aria-label={`Edit ${exercise.name} reps and weight`}
-                          onClick={() => openEditMode(exerciseId)}
-                        >
-                          {warmupLine && (
-                            <div className="set-line">
-                              <span className="set-line-label">Warmup</span>
-                              {warmupLine}
-                            </div>
-                          )}
-                          <div className="set-line">
-                            <span className="set-line-label">Working</span>
-                            {workingLine}
-                          </div>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-        </div>
-      ))}
+      <div className="movement-header">
+        <h1 className="screen-title">{workout.name}</h1>
+        <Link to={`/workouts/${workout.id}/edit`} className="workout-edit-link">
+          Edit
+        </Link>
+      </div>
 
       {armed ? (
         <div className="log-workout log-workout-confirm">
@@ -104,6 +62,66 @@ export default function WorkoutOverview() {
           Log Workout
         </button>
       )}
+
+      {supersets.map((superset) => (
+        <div key={superset.order} className="superset">
+          <div className="superset-label">Superset {superset.order}</div>
+          {[...superset.slots]
+            .sort((a, b) => a.order - b.order)
+            .map((slot) => {
+              const hasAlternates = slot.exerciseIds.length > 1;
+              return (
+                <div key={slot.order} className="slot" data-swipe={hasAlternates}>
+                  {slot.exerciseIds.map((exerciseId) => {
+                    const exercise = getExercise(exerciseId);
+                    if (!exercise) return null;
+                    const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment);
+                    const workingLines = getWorkingLines(protocol.workingSets, exercise.target);
+
+                    return (
+                      <div key={exerciseId} className="slot-card">
+                        <Link to={`/workouts/${workout.id}/exercises/${exerciseId}`} className="exercise-name">
+                          {exercise.name}
+                        </Link>
+                        <div className="set-lines-row">
+                          {warmupLines ? (
+                            <button
+                              type="button"
+                              className="set-line-panel set-line-btn"
+                              aria-label={`Edit ${exercise.name} warmup`}
+                              onClick={() => openEditMode(exerciseId)}
+                            >
+                              <span className="set-line-label">
+                                <SetLinesLabel label="Warmup" sets={warmupLines.sets} />
+                              </span>
+                              <SetLinesRows lines={warmupLines} />
+                            </button>
+                          ) : (
+                            <div className="set-line-panel">
+                              <span className="set-line-label">Warmup</span>
+                              <div className="set-line-none">None required</div>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="set-line-panel set-line-btn"
+                            aria-label={`Edit ${exercise.name} working set reps and weight`}
+                            onClick={() => openEditMode(exerciseId)}
+                          >
+                            <span className="set-line-label">
+                              <SetLinesLabel label="Working" sets={workingLines.sets} />
+                            </span>
+                            <SetLinesRows lines={workingLines} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+        </div>
+      ))}
     </div>
   );
 }

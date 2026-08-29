@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { Stepper } from "./EditModeSheet";
 import { useData } from "../lib/DataContext";
 
 interface Snapshot {
-  warmup: string;
+  hasWarmup: boolean;
+  warmupReps: number;
   progressionRule: string;
   cues: string[];
   newCue: string;
+  tags: string[];
+  newTag: string;
   instructionalLink: string;
   videoLink: string;
 }
@@ -14,10 +18,13 @@ export default function EditDetailsSheet() {
   const { editingDetailsExerciseId, closeEditDetails, getExercise, updateExerciseDetails } = useData();
   const exercise = editingDetailsExerciseId ? getExercise(editingDetailsExerciseId) : undefined;
 
-  const [warmup, setWarmup] = useState("");
+  const [hasWarmup, setHasWarmup] = useState(false);
+  const [warmupReps, setWarmupReps] = useState(1);
   const [progressionRule, setProgressionRule] = useState("");
   const [cues, setCues] = useState<string[]>([]);
   const [newCue, setNewCue] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
   const [instructionalLink, setInstructionalLink] = useState("");
   const [videoLink, setVideoLink] = useState("");
   const [initialSnapshot, setInitialSnapshot] = useState("");
@@ -27,17 +34,23 @@ export default function EditDetailsSheet() {
   useEffect(() => {
     if (!exercise) return;
     const snapshot: Snapshot = {
-      warmup: exercise.warmup ?? "",
+      hasWarmup: exercise.warmupReps != null,
+      warmupReps: exercise.warmupReps ?? 1,
       progressionRule: exercise.progressionRule ?? "",
       cues: exercise.cues,
       newCue: "",
+      tags: exercise.tags,
+      newTag: "",
       instructionalLink: exercise.links.instructional ?? "",
       videoLink: exercise.links.video ?? "",
     };
-    setWarmup(snapshot.warmup);
+    setHasWarmup(snapshot.hasWarmup);
+    setWarmupReps(snapshot.warmupReps);
     setProgressionRule(snapshot.progressionRule);
     setCues(snapshot.cues);
     setNewCue("");
+    setTags(snapshot.tags);
+    setNewTag("");
     setInstructionalLink(snapshot.instructionalLink);
     setVideoLink(snapshot.videoLink);
     setInitialSnapshot(JSON.stringify(snapshot));
@@ -49,7 +62,17 @@ export default function EditDetailsSheet() {
 
   // Includes newCue so a typed-but-not-added cue also counts as an unsaved
   // change — otherwise closing right after typing one would silently lose it.
-  const currentSnapshot: Snapshot = { warmup, progressionRule, cues, newCue, instructionalLink, videoLink };
+  const currentSnapshot: Snapshot = {
+    hasWarmup,
+    warmupReps,
+    progressionRule,
+    cues,
+    newCue,
+    tags,
+    newTag,
+    instructionalLink,
+    videoLink,
+  };
   const isDirty = JSON.stringify(currentSnapshot) !== initialSnapshot;
 
   function addCue() {
@@ -63,12 +86,24 @@ export default function EditDetailsSheet() {
     setCues(cues.filter((_, i) => i !== index));
   }
 
+  function addTag() {
+    const trimmed = newTag.trim();
+    if (!trimmed || tags.includes(trimmed)) return;
+    setTags([...tags, trimmed]);
+    setNewTag("");
+  }
+
+  function removeTag(index: number) {
+    setTags(tags.filter((_, i) => i !== index));
+  }
+
   function handleSave() {
     if (!exercise) return;
     updateExerciseDetails(exercise.id, {
-      warmup: warmup.trim() || null,
+      warmupReps: hasWarmup ? warmupReps : null,
       progressionRule: progressionRule.trim() || null,
       cues,
+      tags,
       links: {
         instructional: instructionalLink.trim() || undefined,
         video: videoLink.trim() || undefined,
@@ -116,20 +151,19 @@ export default function EditDetailsSheet() {
         </div>
 
         <div className="detail-field">
-          <div className="slider-label">Warmup</div>
-          <textarea
-            className="detail-textarea"
-            value={warmup}
-            onChange={(e) => setWarmup(e.target.value)}
-            placeholder="e.g. 50-75% of working weight for 10 reps each side"
-            rows={2}
-          />
-          {exercise.warmupSpec && (
-            <div className="detail-hint">
-              This exercise's warmup weight is calculated automatically from your equipment (see the "Home
-              equipment" section in the PRD) whenever the load is a free weight. This text is only shown as a
-              fallback — it won't appear unless that stops applying.
-            </div>
+          <label className="toggle-row">
+            <input type="checkbox" checked={hasWarmup} onChange={(e) => setHasWarmup(e.target.checked)} />
+            This exercise has a warmup
+          </label>
+          {hasWarmup && (
+            <>
+              <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={1} onChange={setWarmupReps} />
+              <div className="detail-hint">
+                The weight or band itself is set from Edit Mode (tap the Warmup panel on Workout Overview or
+                Movement Detail) — matched to 50-75% of the working target by default, or set independently if you
+                uncheck "Match Working" there.
+              </div>
+            </>
           )}
         </div>
 
@@ -174,6 +208,36 @@ export default function EditDetailsSheet() {
               placeholder="Add a cue"
             />
             <button type="button" className="cue-add-btn" onClick={addCue}>
+              Add
+            </button>
+          </div>
+        </div>
+
+        <div className="detail-field">
+          <div className="slider-label">Tags</div>
+          {tags.map((tag, i) => (
+            <div key={i} className="cue-row">
+              <div className="cue-text">{tag}</div>
+              <button type="button" className="cue-remove" onClick={() => removeTag(i)} aria-label={`Remove tag: ${tag}`}>
+                ×
+              </button>
+            </div>
+          ))}
+          <div className="cue-add-row">
+            <input
+              type="text"
+              className="detail-input"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+              placeholder="e.g. legs, core"
+            />
+            <button type="button" className="cue-add-btn" onClick={addTag}>
               Add
             </button>
           </div>

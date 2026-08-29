@@ -40,6 +40,68 @@ body {
   margin: 4px 0 20px;
 }
 
+.screen-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.screen-title-input {
+  display: block;
+  width: 100%;
+  border: none;
+  border-bottom: 1px dashed var(--border);
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  padding: 0 0 4px;
+}
+
+.screen-title-input::placeholder {
+  color: var(--text-muted);
+}
+
+.workout-edit-link {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workout-edit-link:hover {
+  border-color: var(--accent);
+}
+
+.icon-link {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 4px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.icon-link:hover {
+  border-color: var(--accent);
+}
+
+.screen-title-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
 .back-link {
   display: inline-block;
   color: var(--text-muted);
@@ -72,16 +134,6 @@ body {
 .workout-card-meta {
   font-size: 13px;
   color: var(--text-muted);
-}
-
-.stretching-note {
-  font-size: 14px;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 14px;
-  margin-bottom: 20px;
 }
 
 .superset {
@@ -141,46 +193,127 @@ body {
   color: var(--accent);
 }
 
-.set-lines-btn {
-  display: block;
-  width: 100%;
+.set-lines-row {
+  display: flex;
   margin-top: 8px;
-  padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.set-line-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.set-line-panel + .set-line-panel {
+  border-left: 1px solid var(--border);
+}
+
+.set-line-btn {
+  border: none;
   font: inherit;
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.set-lines-btn:hover {
-  border-color: var(--accent);
+.set-line-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.set-line {
-  color: var(--text);
-  font-size: 14px;
+.set-line-btn:active {
+  background: rgba(91, 140, 255, 0.22);
 }
 
-.set-line + .set-line {
-  margin-top: 4px;
+.set-line-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .set-line-label {
+  display: block;
   color: var(--text-muted);
   font-weight: 600;
-  margin-right: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.set-lines-sets {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* The bold, glanceable row(s) — the whole point of this treatment is reading
+   "15 lbs x 15" at a glance mid-set instead of parsing a full sentence. */
+.set-lines-rows {
+  margin-top: 2px;
+}
+
+/* One text row + its band-color row, kept together as a unit. The gap between
+   groups (Left's unit vs. Right's) is deliberately bigger than the gap inside
+   a group (text to its own bars), so it's unambiguous which weight/reps a
+   given row of bars belongs to. */
+.set-line-group + .set-line-group {
+  margin-top: 10px;
+}
+
+.set-line-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.set-line-side {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* Same row height/weight as a real set-line-row, so an exercise with no
+   warmup at all still lines up with the ones that do — deliberately shown
+   rather than just hiding the whole Warmup panel, which read as broken. */
+.set-line-none {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
+.band-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.band-dot {
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.set-line-reps {
+  color: var(--text-muted);
+  font-weight: 700;
 }
 
 .log-workout {
-  position: fixed;
-  bottom: 20px;
-  left: 16px;
-  right: 16px;
-  max-width: 448px;
-  margin: 0 auto;
+  display: block;
+  width: 100%;
+  margin: 0 0 20px;
   padding: 14px;
   border-radius: var(--radius);
   border: none;
@@ -232,12 +365,17 @@ body {
   right: 24px;
   width: 56px;
   height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: var(--accent);
   color: white;
   border: none;
   font-size: 28px;
   line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
@@ -286,6 +424,39 @@ body {
   color: var(--text-muted);
   font-size: 13px;
   margin-top: 2px;
+}
+
+.side-tempo-notes {
+  margin-top: 4px;
+}
+
+/* Movement Detail's Warmup/Working sections double as Edit Mode's entry point,
+   same as the panels on Workout Overview — reset button chrome so it still
+   reads as a plain section until you notice the tap affordance. */
+.detail-set-lines-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.detail-set-lines-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.detail-set-lines-btn:active {
+  background: rgba(91, 140, 255, 0.16);
+}
+
+.detail-set-lines-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .note-callout {
@@ -418,6 +589,39 @@ body {
   cursor: pointer;
 }
 
+.toggle-row-inline {
+  margin-bottom: 0;
+}
+
+.edit-mode-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edit-mode-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 16px;
+}
+
+.edit-mode-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.load-editor-preview {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
 .sides-editor {
   display: flex;
   flex-direction: column;
@@ -440,9 +644,16 @@ body {
   margin-bottom: 12px;
 }
 
-.bodyweight-note {
-  color: var(--text-muted);
-  font-size: 14px;
+.equipment-add-hint {
+  display: block;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .slider-label {
@@ -499,11 +710,58 @@ body {
   cursor: not-allowed;
 }
 
+.stepper-row-lg {
+  padding: 8px;
+}
+
+.stepper-btn-lg {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+}
+
+.stepper-value-lg {
+  font-size: 22px;
+}
+
+.equipment-add-control {
+  margin-top: 4px;
+}
+
+.equipment-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.equipment-add-cancel,
+.equipment-add-confirm {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.equipment-add-cancel {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+}
+
+.equipment-add-confirm {
+  border: none;
+  background: var(--accent);
+  color: white;
+}
+
 .band-picker {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 10px;
   margin-bottom: 8px;
 }
 
@@ -541,6 +799,11 @@ body {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.save-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* History */
@@ -970,4 +1233,168 @@ body {
   border: none;
   background: var(--accent);
   color: white;
+}
+
+.kind-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kind-picker-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kind-picker-btn.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(91, 140, 255, 0.1);
+}
+
+/* Exercise picker (Create New Home Workout) */
+
+.picker-search-input {
+  margin-bottom: 12px;
+}
+
+.picker-list {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.picker-list-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.picker-list-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.picker-list-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.picker-list-item:disabled:hover {
+  background: none;
+}
+
+.picker-item-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.picker-item-tags {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.picker-new-trigger {
+  margin-top: 0;
+}
+
+.picker-create-btn {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
+}
+
+/* Create New Home Workout */
+
+.builder-superset {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.builder-superset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.builder-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.builder-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.builder-slot-row:last-of-type {
+  border-bottom: none;
+}
+
+.builder-slot-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.builder-slot-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.builder-add-superset-btn {
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+.builder-alternate-warning {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+}
+
+.builder-delete-trigger {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.builder-delete-trigger:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.builder-delete-confirm {
+  margin-top: 12px;
 }

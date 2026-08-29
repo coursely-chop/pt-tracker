@@ -1,27 +1,8 @@
-import { computeBandWeight, pickWarmupWeight } from "./equipment";
-import type { Exercise, ExerciseTarget, Load } from "../types";
+import { computeBandWeight, pickWarmupBand, pickWarmupWeight } from "./equipment";
+import type { Equipment, Exercise, ExerciseTarget, Load } from "../types";
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-/** e.g. "5 lbs" or, for bands, "10 lbs (Yellow band)" / "80 lbs (Red & Blue Bands)" —
- * the band weight is always computed from the bands themselves (see equipment.ts),
- * never stored, so it can't drift out of sync with the fixed per-color weights. */
-export function formatLoad(load: Load | null): string {
-  if (!load) return "";
-  switch (load.kind) {
-    case "freeWeight":
-      return `${load.lbs} lbs`;
-    case "band": {
-      const isPlural = load.bands.length > 1;
-      const bandLabel = `${load.bands.map(capitalize).join(" & ")} ${isPlural ? "Bands" : "band"}`;
-      const weight = computeBandWeight(load.bands);
-      return weight > 0 ? `${weight} lbs (${bandLabel})` : bandLabel;
-    }
-    case "bodyweight":
-      return "Bodyweight";
-  }
 }
 
 export function formatReps(reps: number, repUnit?: string): string {
@@ -29,41 +10,94 @@ export function formatReps(reps: number, repUnit?: string): string {
   return `${reps} ${unit}${reps === 1 ? "" : "s"}`;
 }
 
-/** e.g. "(x2) 15 reps @ 5 lbs" or, for asymmetric targets, "(x2) L: ...; R: ...". */
-export function formatWorkingLine(sets: number, target: ExerciseTarget): string {
+/** One glanceable row: a weight/bodyweight label, the bands behind it (rendered
+ * as color dots, not spelled out — see components/SetLines.tsx), and a rep count.
+ * sideLabel is only set for an asymmetric exercise's Left/Right pair. */
+export interface SetLineRow {
+  sideLabel?: "L" | "R";
+  text: string;
+  bandColors: string[];
+  reps: number;
+}
+
+/** sets is the set count for the section header (e.g. "Working (x2)") — kept
+ * separate from the rows themselves, which are just weight/reps per side. */
+export interface SetLines {
+  sets: number;
+  rows: SetLineRow[];
+}
+
+function loadToRow(load: Load | null): { text: string; bandColors: string[] } {
+  if (!load || load.kind === "bodyweight") return { text: "Bodyweight", bandColors: [] };
+  if (load.kind === "freeWeight") return { text: `${load.lbs} lbs`, bandColors: [] };
+  const weight = computeBandWeight(load.bands);
+  return { text: weight > 0 ? `${weight} lbs` : "—", bandColors: load.bands };
+}
+
+export function getWorkingLines(sets: number, target: ExerciseTarget): SetLines {
   if (target.sides) {
     const { left, right } = target.sides;
-    const leftStr = `L: ${formatReps(left.reps, target.repUnit)} @ ${formatLoad(left.load)}`;
-    const rightStr = `R: ${formatReps(right.reps, target.repUnit)} @ ${formatLoad(right.load)}`;
-    return `(x${sets}) ${leftStr}; ${rightStr}`;
+    return {
+      sets,
+      rows: [
+        { sideLabel: "L", ...loadToRow(left.load), reps: left.reps },
+        { sideLabel: "R", ...loadToRow(right.load), reps: right.reps },
+      ],
+    };
   }
 
-  const repsStr =
-    target.reps != null
-      ? formatReps(target.reps, target.repUnit)
-      : `${target.repRange.min}-${target.repRange.max} ${target.repUnit ?? "reps"}`;
-  const loadStr = target.load ? formatLoad(target.load) : null;
-  return loadStr ? `(x${sets}) ${repsStr} @ ${loadStr}` : `(x${sets}) ${repsStr}`;
+  const reps = target.reps ?? target.repRange.min;
+  return { sets, rows: [{ ...loadToRow(target.load), reps }] };
+}
+
+/** 50-75% of a working load, snapped to an actual weight/band from owned
+ * equipment instead of left as mental math — see pickWarmupWeight/pickWarmupBand
+ * in lib/equipment.ts. Bodyweight (and a null load) has nothing to scale, so it
+ * computes to bodyweight too rather than needing a special case — and if you
+ * own no free weights at all, pickWarmupWeight's 0 folds back into bodyweight
+ * the same way, rather than displaying a nonsensical "0 lbs". */
+export function computeWarmupLoad(load: Load | null, equipment: Equipment): Load {
+  if (!load || load.kind === "bodyweight") return { kind: "bodyweight" };
+  if (load.kind === "freeWeight") {
+    // Dumbbells vs. kettlebells only matters for how Equipment Settings tracks
+    // and labels them (pair vs. single) — for picking a warmup weight, either
+    // is just a number you can grab, so the two lists are merged here.
+    const owned = [...equipment.ownedDumbbells, ...equipment.ownedKettlebells];
+    const lbs = pickWarmupWeight(load.lbs, owned);
+    return lbs > 0 ? { kind: "freeWeight", lbs } : { kind: "bodyweight" };
+  }
+  return { kind: "band", bands: pickWarmupBand(load.bands, equipment.ownedBands) };
 }
 
 /**
- * For exercises with a warmupSpec, computes an actual weight to grab from owned
- * equipment instead of leaving "50-75% of working weight" as mental math. Falls
- * back to the free-text warmup description for everything else (bands, bodyweight,
- * or free-weight exercises that haven't been given a warmupSpec).
+ * Warmup is "linked" by default (warmupLoad is null) — always computed live as
+ * 50-75% of the current working load. Setting warmupLoad "unlinks" it: an
+ * independent load (or left/right pair, for an asymmetric exercise) takes over
+ * instead, edited the same way as the working target in Edit Mode. warmupReps is
+ * the one thing about warmup that never derives from the working target. Null
+ * warmupReps means this exercise has no warmup at all — no line, computed or not.
  */
-export function formatWarmupLine(sets: number, exercise: Exercise): string | null {
-  const { warmup, warmupSpec, target } = exercise;
+export function getWarmupLines(sets: number, exercise: Exercise, equipment: Equipment): SetLines | null {
+  const { warmupReps, warmupLoad, target } = exercise;
+  if (warmupReps == null) return null;
 
-  if (warmupSpec && target.load?.kind === "freeWeight") {
-    const snapped = pickWarmupWeight(target.load.lbs);
-    const repsStr = formatReps(warmupSpec.reps, target.repUnit);
-    const sideStr = target.perSide ? " each side" : "";
-    return `(x${sets}) ${snapped} lbs for ${repsStr}${sideStr}`;
+  if (target.sides) {
+    const { left, right } = target.sides;
+    const override = warmupLoad && "left" in warmupLoad ? warmupLoad : null;
+    const leftLoad = override ? override.left : computeWarmupLoad(left.load, equipment);
+    const rightLoad = override ? override.right : computeWarmupLoad(right.load, equipment);
+    return {
+      sets,
+      rows: [
+        { sideLabel: "L", ...loadToRow(leftLoad), reps: warmupReps },
+        { sideLabel: "R", ...loadToRow(rightLoad), reps: warmupReps },
+      ],
+    };
   }
 
-  if (!warmup) return null;
-  return `(x${sets}) ${warmup}`;
+  const override = warmupLoad && !("left" in warmupLoad) ? warmupLoad : null;
+  const load = override ?? computeWarmupLoad(target.load, equipment);
+  return { sets, rows: [{ ...loadToRow(load), reps: warmupReps }] };
 }
 
 /** "2026-08-23" -> "Aug 23, 2026". Appending a time avoids the classic bare-date

@@ -1,8 +1,9 @@
-/**
- * Free weights actually owned at home (each owned as a pair), in lbs.
- * Hardcoded for now — no settings screen to edit this yet.
- */
-export const OWNED_FREE_WEIGHTS = [3, 10];
+/** Seed defaults for a fresh install / migration fallback — see Equipment in
+ * types.ts for the actual user-editable lists (Equipment screen). The original
+ * hardcoded setup (before Equipment existed) was a 3 lb and a 10 lb dumbbell
+ * pair — no kettlebells — so that's what a pre-Equipment snapshot migrates to. */
+export const DEFAULT_OWNED_DUMBBELLS = [3, 10];
+export const DEFAULT_OWNED_KETTLEBELLS: number[] = [];
 
 /**
  * Resistance bands actually owned, and each one's equivalent weight in lbs.
@@ -40,7 +41,8 @@ export function computeBandWeight(bands: string[]): number {
  * numerically closest to the range, tie-breaking toward the lighter one —
  * warming up light is safer than warming up heavy.
  */
-export function pickWarmupWeight(workingLbs: number, owned: number[] = OWNED_FREE_WEIGHTS): number {
+export function pickWarmupWeight(workingLbs: number, owned: number[]): number {
+  if (owned.length === 0) return 0;
   const lo = workingLbs * 0.5;
   const hi = workingLbs * 0.75;
 
@@ -55,4 +57,43 @@ export function pickWarmupWeight(workingLbs: number, owned: number[] = OWNED_FRE
     if (d === bestD) return Math.min(w, best);
     return best;
   });
+}
+
+/** Every combination of owned bands (including none, for the bodyweight-equivalent
+ * case), used by pickWarmupBand to search for the best warmup combo the same way
+ * a working set's band combo is chosen — by total resistance, not by color. */
+function bandCombinations(owned: string[]): string[][] {
+  return owned.reduce<string[][]>((combos, color) => [...combos, ...combos.map((c) => [...c, color])], [[]]);
+}
+
+/**
+ * Band equivalent of pickWarmupWeight: picks the combo of owned bands whose
+ * combined resistance best targets 50-75% of the working combo's weight.
+ * Same preference order — a combo actually in range, or the numerically
+ * closest one, tying toward fewer bands (simpler to grab) then lighter
+ * (safer to be off in that direction).
+ */
+export function pickWarmupBand(workingBands: string[], owned: string[]): string[] {
+  const workingLbs = computeBandWeight(workingBands);
+  const lo = workingLbs * 0.5;
+  const hi = workingLbs * 0.75;
+
+  const candidates = bandCombinations(owned).map((combo) => ({ combo, weight: computeBandWeight(combo) }));
+
+  const inRange = candidates.filter((c) => c.weight >= lo && c.weight <= hi);
+  const pool = inRange.length > 0 ? inRange : candidates;
+  const distance = (weight: number) => (inRange.length > 0 ? 0 : weight < lo ? lo - weight : weight - hi);
+
+  return pool.reduce((best, c) => {
+    const d = distance(c.weight);
+    const bestD = distance(best.weight);
+    if (inRange.length > 0) {
+      // Among in-range combos, prefer the heaviest (mirrors pickWarmupWeight).
+      if (c.weight !== best.weight) return c.weight > best.weight ? c : best;
+    } else if (d !== bestD) {
+      return d < bestD ? c : best;
+    }
+    if (c.combo.length !== best.combo.length) return c.combo.length < best.combo.length ? c : best;
+    return c.weight < best.weight ? c : best;
+  }).combo;
 }

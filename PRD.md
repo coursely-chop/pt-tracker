@@ -24,25 +24,29 @@ Replace the Apple Note my trainer shares with a local-first app that (a) reminds
 ### 2. Home Workout List
 
 - List of saved home workouts. Each row shows:
-  - Name (tap to rename inline)
+  - Name (renaming happens via Edit Workout — §9 — not inline on this list)
   - Last completed date (derived from completion log; "never" if none yet)
 - FAB (+) → Create New Home Workout (see [§9](#9-create-new-home-workout)).
+- An **"Equipment"** pill in the header → Equipment Settings (§11) — owned free weights and bands, which feed the computed warmup suggestion everywhere else in the app.
 - Tap a workout → Workout Overview.
 
 ### 3. Workout Overview
 
 This is the primary "what do I do today" screen — the goal is that on a normal day, you never need to leave it.
 
-- Dynamic stretching reference, shown at the top.
 - Exercises listed in order, **visually grouped by superset** (exact visual treatment — bracket, border, label — TBD, not resolved here).
-- **Under each exercise, a compact warmup line and working-set line** — sets, reps, and weight/band (per-side values shown side by side if the exercise is asymmetric). This is a change from the earlier draft, which deliberately kept weight/reps off this screen; moving them here is what makes the overview self-sufficient for most days. It's the same `target`/`warmup` data Movement Detail already reads — just summarized inline, not duplicated in storage.
-- **Warmup weight is computed, not left as math.** For exercises where it applies, the warmup line shows an actual weight to grab (e.g. "3 lbs") instead of "50-75% of working weight" — picked from your real home equipment. See [Home equipment](#home-equipment) below.
+- **Under each exercise, a compact warmup panel and working panel, side by side.** This is a change from the earlier draft, which deliberately kept weight/reps off this screen; moving them here is what makes the overview self-sufficient for most days. It's the same `target`/warmup data Movement Detail already reads — just summarized inline, not duplicated in storage.
+- **Typography: a small label, a big glanceable number.** Each panel's header carries the set count (`Warmup (x1)`, `Working (x2)`) — pulled out of the value line, not prefixed onto it. Below that, one bold, larger-type row per side: `15 lbs x 15`, or two rows for an asymmetric exercise (`L: 10 lbs x 10` / `R: 80 lbs x 15`). This exists because the previous single-sentence format ("(x2) L: 10 reps @ 10 lbs (Yellow band); R: ...") was real-use-tested mid-workout and came back as "too many numbers... I want to glance at this, not squint and parse it."
+- **Bands render as small horizontal color bars on their own line below each weight/reps row**, not inline after them — a version with bars inline wrapped unpredictably once a wide combo didn't fit the narrow Workout Overview panel, landing at a different, oddly-indented point depending on that row's own text length. On its own line, a single flat horizontal row of bars fits even the narrowest panel width regardless of band count — up to 5, every color at once, is the most an exercise could ever have — so the column-stacking an earlier version used to avoid overflow isn't needed at all. For an asymmetric exercise, the gap between Left's text+bars unit and Right's is deliberately bigger than the gap between a row's own text and its bars, so it's unambiguous which weight a given row of bars belongs to. (Two earlier variants of the color treatment were tried and dropped before this one: side-by-side dots between the weight and reps, and a colored keyline around the whole panel — mocked up in Figma and rejected as not reading as cleanly.) Every bar carries a subtle light outline (`box-shadow`, not `border` — a border would eat into the bar's own 2-3px height under this app's border-box sizing) so the darkest band color (black, rendered as a dark grey stand-in) doesn't disappear against the page background. Same treatment on Movement Detail (§4) — one shared formatter and rendering component, not two versions to keep in sync.
+- **Warmup weight is computed for every exercise, not left as math.** The warmup row always shows an actual weight or band to grab — 50-75% of the working target, picked from your real home equipment — instead of asking you to do the percentage math yourself. Bodyweight exercises warm up as bodyweight; asymmetric exercises compute and show both sides independently. See [Home equipment](#home-equipment) below and [Edit Mode](#5-edit-mode-repsweight) for how (and when) this computation can be overridden.
+- **An exercise with no warmup at all still shows the section — it just says "None required."** (e.g. Same Side Dead-Bugs.) An earlier version hid the whole Warmup panel for these, which read as broken/inconsistent once every other exercise in the workout showed Warmup and Working side by side. The panel isn't a tap target in this state — there's no weight to edit when none applies. Separately, an exercise whose warmup and working are numerically identical (Single Leg Standing 8-Point Leg Reaches — both are `Bodyweight x 1`, since the real difference is reach *distance*, not weight or reps) still shows both rows for consistency, with the actual distinction carried as a form cue rather than invented as a new data field for one exercise.
 - **Alternate exercises share one slot, not separate rows.** A superset slot with more than one exercise (e.g. Lying Tricep Extensions / Single Arm Band Kick-Backs) renders as a single horizontally swipeable card, with the next alternate peeking in at the edge — not stacked as extra list items. This keeps "how many exercises in this superset" visually honest (it's the slot count, not the exercise count), and makes the alternate relationship implicit in the layout rather than needing an "or" label to explain it.
 - **Two distinct tap targets per exercise**, differentiated by type/affordance/spacing rather than separate rows:
   - Tapping the **exercise name** → **Movement Detail** (§4), for cues, notes, history, or Edit Details.
-  - Tapping the **warmup/working panel** (the whole block below the name, set apart with a subtle background to signal it's interactive) → opens **Edit Mode** (§5) directly, as an overlay/sheet scoped to that exercise — no detour through Movement Detail required. Same edit surface either way; this is just a second entry point into it, so there's no duplicate editing logic to maintain. (Went through two earlier iterations here: first the working-set line alone as the tap target — too ambiguous next to the warmup line above it — then a standalone edit icon — too much visual prominence for a secondary action. The whole panel, styled as one affordance, reads as "tap here to adjust" without a separate icon competing for attention.)
+  - **Both the warmup and working panels open Edit Mode** (§5) — same sheet either way, since Edit Mode now edits both. (Went through two intermediate designs here: first the whole panel as one tap target with both lines stacked inside — ambiguous about what you were about to change. Then, briefly, warmup made plainly non-interactive since Edit Mode only touched working at the time. Real use surfaced that as its own problem — "I don't love that you can't edit the warmup, that it's all computed whether you want it or not" — which is what led to Edit Mode handling both, described below, rather than warmup staying locked to the computed value forever.)
   - Overview stays read-only/glanceable until one of these is deliberately tapped.
-- **Log Workout**, directly on this screen — resolves the earlier open item on placement. A `Log Workout` button arms on first tap, its label changing to a confirm state (`Record Workout on Aug 8`, using today's date) that must be tapped again to actually record it — guards against an accidental single tap. See [§8](#8-log-workout-completion) for what the write does.
+- **Log Workout**, directly on this screen — resolves the earlier open item on placement. Sits inline right below the header, not floating/fixed (an earlier version pinned it to the bottom of the viewport). A `Log Workout` button arms on first tap, its label changing to a confirm state (`Record Workout on Aug 8`, using today's date) that must be tapped again to actually record it — guards against an accidental single tap. See [§8](#8-log-workout-completion) for what the write does.
+- **No dynamic stretching reference shown here** — an earlier version displayed it inline below the title, but it was dropped in favor of keeping this screen focused on the exercises themselves. The underlying field isn't gone: it's still set per workout via Create/Edit Home Workout (§9), just not surfaced on Overview.
 
 ### 4. Movement Detail
 
@@ -50,27 +54,32 @@ Reached by tapping an exercise on the Workout Overview, when you want more than 
 
 - Exercise name.
 - Media: picture/gif/video, collapsible.
-- **Warmup** section: sets + reps, and target load (if the exercise has one — see §5 for load-type branching).
-- **Working Sets** section: sets + reps, and target load.
+- **Warmup** and **Working Sets** sections — same bold, glanceable typography and structure as Workout Overview's panels (§3): a header with the set count, one bold row per side (asymmetric exercises show Left and Right, each with its own tempo note below if one exists). Both sections **open Edit Mode** (§5) when tapped, same as the panels on Workout Overview.
 - Set counts (warmup/working) are pulled from the **workout-level protocol** (e.g. 2 working + 1 warmup), not set per-exercise — matches the existing data model, no override mechanism in MVP.
-- If the exercise has asymmetric left/right targets, show both side by side; otherwise a single combined value.
-- Actions row: **Edit reps/weight** (primary) and **View History**, side by side.
+- Actions row: **View History**, full width. (An earlier version had a separate "Edit reps/weight" button here too — once the Working section itself became tappable, that was a second entry point to the exact same action, so it was removed rather than kept as a redundant shortcut.)
 - **Edit Details** as a secondary link below the row (see [§10](#10-edit-exercise-details) — metadata only, separate from editing reps/weight).
 - **Back to Overview** via the back-link at the top of the screen.
 - **Next/previous movement:** a left/right swipe (not a button — an earlier draft had a "Next Movement →" button here; removed since a swipe reads more naturally as "step through the workout" and freed up the button slot for View History) advances through the current superset's slots, then into the next superset, in workout order, and back again. A small `‹ ›` pill cluster, right-justified on the same line as the exercise name, doubles as both the discoverability cue for the swipe *and* a tappable shortcut — whichever direction has nowhere to go renders disabled/dimmed rather than disappearing, so the cluster's shape stays consistent across the whole workout. (An earlier version used barely-visible arrows pinned to the screen edges, purely as a visual hint with no tap target — too subtle to actually read as "you can do something here.") `Notes` isn't built yet (§6) so isn't in this row.
 
 ### 5. Edit Mode (reps/weight)
 
-Reached two ways — tapping the warmup/working panel directly on Workout Overview (§3), or the "Edit reps/weight" link on Movement Detail (§4). Same surface either way, just two doors into it.
+Reached by tapping either the warmup or working panel on Workout Overview (§3), or either section on Movement Detail (§4) — same sheet regardless of which one you tap, since it edits both.
 
-Editing branches by the exercise's load type:
+**Working**, unchanged from earlier:
 
 - **Free weight:** stepper, ±2.5 / 5 / 7.5 / 10 lbs.
 - **Band:** band-color (or combo) picker instead of a numeric stepper.
 - **Bodyweight / no load:** no weight control at all — reps-only edit.
 - Reps: a stepper, same ±1-at-a-time interaction as weight. (An earlier pass added a toggle for a working-set range like 12-15 — reverted; it added real complexity, keeping min ≤ max valid in the UI, for a use case that didn't earn it. Reps is a single number.)
 - **Left/Right split:** off by default (single combined input). Toggling it splits weight + reps into two parallel inputs labeled Left / Right.
-- Saving updates the exercise's current target **and** appends a dated entry to its progression history — this is the only thing that writes to progression; there's no separate "log a set" action.
+- Saving updates the exercise's current target **and** appends a dated entry to its progression history — this is the only thing that writes to progression; there's no separate "log a set" action. Warmup changes never touch progression.
+
+**Warmup**, shown above Working when the exercise has one (`warmupReps` set — see [Edit Exercise Details](#10-edit-exercise-details)):
+
+- A **"Match Working (50-75%)" checkbox, checked by default.** Checked, warmup is a read-only preview computed live from whatever Working is currently set to in this same sheet — adjust Working's weight or band and the warmup preview updates immediately. This is the accelerator: for the common case (warmup should just track working), there's nothing to separately configure.
+- **Unchecking it** replaces the preview with a real editor — the same weight/band controls as Working, just independent of it. An asymmetric exercise gets independent Left/Right editors, matching Working's split. First opened, it seeds from whatever the computed value currently is, so unchecking starts you from a sensible number rather than blank.
+- **This choice persists per exercise**, not just for the current edit — checking or unchecking is a real, remembered setting (`warmupLoad`), not a one-time in-the-moment toggle. An unlinked exercise stays unlinked (showing its independently-set load) until the box is checked again.
+- This replaced an earlier, simpler design where warmup was always computed with no way to override it at all, editable only as a plain-text escape hatch from Edit Exercise Details. Real use surfaced that as too rigid — sometimes the 50-75% rule genuinely shouldn't apply, and the fix belonged in the same weight/band editor as Working, not a separate typed sentence.
 
 ### 6. Notes
 
@@ -102,33 +111,38 @@ Editing branches by the exercise's load type:
 
 ### 9. Create New Home Workout
 
-Triggered by the FAB on the Home Workout List. A guided, sequential flow that mirrors the underlying structure (a workout is a name + protocol + an ordered list of supersets, each holding one exercise per slot):
+Triggered by the FAB (+) on the Home Workout List, at `/workouts/new`. A single scrolling page rather than a multi-step wizard — sections stacked top to bottom in the same order as the underlying structure (a workout is a name + protocol + an ordered list of supersets, each holding one exercise per slot). This matches how the rest of the app favors one glanceable page over paginated flows, and this screen is used rarely enough that wizard back/next state wasn't worth building.
 
-1. **Name the workout.** Required; can be renamed later from the Workout List.
-2. **Build supersets, in order.** "Add superset," then within it "Add exercise" per slot. No alternates in this flow (a slot is exactly one exercise) — matches the decision to keep MVP creation simple; the existing alternate exercises (Tricep Extension / Kick-Back) stay as-is, defined directly in the data.
-3. **Add exercise (per slot):** search/pick from the existing exercise library by name, or **"+ New Exercise"** to define one that doesn't exist yet.
+1. **Name the workout**, typed directly into the page's title (an input styled and sized like the `screen-title` heading everywhere else, with a dashed underline as the only hint it's editable) rather than a heading plus a separate labeled field below it — one place to look, not two saying the same thing. Required to save.
+2. **Build supersets, in order.** "+ Add Superset," then within each one "+ Add Exercise" per slot. No alternates in this flow (a slot is exactly one exercise) — matches the decision to keep MVP creation simple; the existing alternate exercises (Tricep Extension / Kick-Back) stay as-is, defined directly in the data. Reordering and removing use one consistent control cluster at both the superset and slot level: the ↑/↓ pill (same one used for Movement Detail's prev/next navigation) plus a small circular × next to it — not drag-and-drop, consistent with everything else here being hand-rolled without a gesture/drag library, and creating a workout is infrequent enough that drag's ergonomics aren't worth the complexity. (An earlier pass had the superset-level remove as a plain text button separate from the ↑/↓ cluster — it read as a second, misaligned control instead of part of the same group, so it became the same × used at the slot level.) An empty superset (no exercises added) is silently dropped on save rather than erroring. Adding the same exercise to a superset twice is blocked: the picker (below) shows it grayed out with "Already in this superset" rather than hiding it outright, so it's clear why it can't be tapped.
+3. **Add exercise (per slot):** opens a sheet with a search box over the exercise library, or **"+ New Exercise"** at the bottom to define one that doesn't exist yet — same sheet, its content swapped, rather than stacking a second sheet (mirrors how Notes toggles between its add/edit views). Search matches **name or tag**, case-insensitive substring — see `tags` in `DATA_MODEL.md`. Since tags are freeform, typing "ar" deliberately matches both an "arm"-tagged and an "arms"-tagged exercise rather than requiring one spelling.
 4. **New Exercise (minimal):**
    - Name
    - Load type — **free weight** (target weight in lbs), **band** (color/combo), or **bodyweight/no load** (no weight field)
-   - Target reps (fixed number, or toggle to a range)
-   - Same/Left-Right toggle for the target, reusing the same interaction as Edit Mode (§5)
-   - Everything else — warmup text, progression rule, cues, links, media — starts empty and gets filled in later via **Edit Exercise Details** (§10). The exercise is saved into the shared library immediately, so it's reusable in future workouts right away, even before that detail is added.
-5. **Protocol.** Prefilled with the standard protocol seen in existing workouts (2 working sets, 1 warmup set, rest 15-30s within superset / 60-90s between supersets); editable if this workout ever needs different timing.
+   - Target reps — a plain number, reusing Edit Mode's Stepper (no range toggle; ranges were tried and dropped app-wide, see §5)
+   - Same/Left-Right toggle for the target, reusing the same interaction and components as Edit Mode (§5)
+   - Tags — freeform add/remove chips, same pattern as Edit Exercise Details
+   - Everything else — warmup text, progression rule, links, media — starts empty and gets filled in later via **Edit Exercise Details** (§10). The exercise is saved into the shared library immediately, so it's reusable (and searchable) in future workouts right away, even before that detail is added.
+5. **Protocol.** Prefilled with the standard protocol seen in existing workouts (2 working sets, 1 warmup set, rest 15-30s within superset / 60-90s between supersets); editable via the same Stepper controls used elsewhere. No min ≤ max enforcement on the rest ranges, deliberately — same reasoning as dropping rep-range validation in §5.
 6. **Dynamic stretching reference.** Optional free-text field, defaults empty.
-7. **Save** → back to Home Workout List; the new workout shows "last completed: never."
+7. **Save** → back to Home Workout List; the new workout shows "last completed: never." Disabled until the workout has a name and at least one non-empty superset.
 
-Reordering exercises/supersets during this flow (drag vs. up/down controls) is a visual-design detail, not resolved here.
+**Editing and deleting an existing workout** reuse this same builder rather than a separate flow — one place this structure ever gets built or changed. An **"Edit"** pill next to the workout name on Workout Overview opens it at `/workouts/:workoutId/edit`, prefilled with the workout's current name, supersets/slots, protocol, and stretching note. Saving there updates the existing workout in place (button reads **Save Changes**) and returns to Workout Overview instead of the Workout List, since you were already looking at that workout. A **Delete Workout** button appears only in edit mode, below Save — tapping it swaps to an inline "Delete this workout? This can't be undone." confirmation (Cancel/Delete, the same in-place pattern used for note deletion) rather than deleting on the first tap, since this is permanent. Deleting also removes any logged completions for that workout — an orphaned completion pointing at a workout that no longer exists isn't a history worth keeping.
+
+Because this flow's data model only allows one exercise per slot (no alternates), editing a workout that has an alternate-exercise slot from the original data — today, only Home Strength Workout #2's Tricep Extension / Kick-Back slot — surfaces an upfront notice that saving will keep just the primary exercise and drop the alternate, rather than silently discarding it.
 
 ### 10. Edit Exercise Details
 
-A metadata-only editor for an exercise, reached via an "Edit Details" link on Movement Detail (§4) — implemented as a bottom sheet, same pattern as Edit Mode. Not yet wired up right after inline-creating a new exercise in §9, since that flow doesn't exist yet.
+A metadata-only editor for an exercise, reached via an "Edit Details" link on Movement Detail (§4) — implemented as a bottom sheet, same pattern as Edit Mode.
 
 - Header reads **"Edit [Exercise Name] Details"** rather than just the exercise name — Edit Mode's sheet already uses the bare name as its header, so this disambiguates which editor is open at a glance.
-- Editable: warmup text (multi-line — can run to a full sentence), progression rule (single-line — this text is never more than about one line in practice, so a resizable textarea would be over-building it), cues (add/remove, via a text input + Add button), links (instructional/video URLs — "media" here means these two link fields; there's no picture/gif upload, matching `DATA_MODEL.md`'s note that the source note had no extractable images).
-- If the exercise has a `warmupSpec` (its warmup weight is computed from equipment, not read from text — see `DATA_MODEL.md`), the warmup field shows a hint explaining the text won't actually appear anywhere while that's the case, rather than silently letting you edit something invisible.
+- Editable: **warmup** (a "This exercise has a warmup" checkbox, which reveals a Warmup Reps stepper when checked — the one thing about warmup that doesn't derive from the working target and isn't set from Edit Mode; the weight/band itself is set there instead, see §5), progression rule (single-line — this text is never more than about one line in practice, so a resizable textarea would be over-building it), cues (add/remove, via a text input + Add button), tags (same add/remove pattern as cues — see `tags` in `DATA_MODEL.md`), links (instructional/video URLs — "media" here means these two link fields; there's no picture/gif upload, matching `DATA_MODEL.md`'s note that the source note had no extractable images).
 - **Unsaved-changes guard:** closing (X or backdrop tap) with any pending edit — including text typed into the "add a cue" field but never added — shows a custom in-sheet "Discard unsaved changes?" prompt (Cancel/Discard) instead of silently losing it. Styled to match the sheet rather than a native browser `confirm()`, consistent with the rest of this app being fully custom. Saving always bypasses this, since saving isn't a discard.
 - **Does not** touch target weight/reps and never writes to the progression log — that stays exclusive to Edit Mode (§5). Keeping these two edit paths separate avoids accidentally generating a progression entry just because someone added a form cue. Verified: editing details leaves `progression[]` and `target` byte-for-byte unchanged.
 
+### 11. Equipment Settings
+
+A dedicated screen (not a sheet — there's no single exercise/workout it's scoped to, so it's reached from the global Home Workout List rather than launched over one), covered in full in [Home equipment](#home-equipment) above. Editing here writes immediately (no explicit Save button) — the same instant-persist pattern as toggling a note's pin, since there's no multi-field form to accidentally half-fill and lose.
 ## Logging philosophy
 
 Two separate, intentionally lightweight logs — no per-set/per-session logging:
@@ -149,28 +163,30 @@ Flagging what this brief requires in `seed-data.json` / `DATA_MODEL.md`:
 - Edit-mode branching by `Load.kind` (freeWeight / band / bodyweight) matches the existing `Load` union — implemented, no schema change was needed.
 - Creating a workout/exercise doesn't need new entities — it's just new entries in the existing `exercises[]` and `workouts[]` arrays. The only rule to enforce: **only Edit Mode (§5) appends to an exercise's `progression[]`** — Edit Exercise Details (§10) and workout creation (§9) both write metadata/structure only.
 
-**Implemented so far:** Home Workout List, Workout Overview, Movement Detail, Edit Mode, Log Workout, History, Notes, and Edit Exercise Details (§3-8, §10) — all reading/writing through `localStorage`, wired end to end. Create New Home Workout is the only piece still just this brief.
+**Implemented so far:** every screen in this document (§3-10) — all reading/writing through `localStorage`, wired end to end.
 
 ## Home equipment
 
-The trainer's "50-75% of working weight" warmup guidance assumes a weight rack; the actual home setup is a **3 lb dumbbell pair, a 10 lb dumbbell pair, and resistance bands**. That gap is real — at a 10 lb working weight, the ideal warmup range (5-7.5 lbs) isn't reachable with either pair, so the app picks the closer/safer option (3 lbs) instead of pretending a perfect match exists. See `DATA_MODEL.md`'s "Computed warmup weight" section for the exact rule.
+The trainer's "50-75% of working weight" warmup guidance assumes a weight rack; a real home setup is some specific set of dumbbells and resistance bands, which won't always land a perfect match — at a 10 lb working weight with only 3s and 10s on hand, the ideal warmup range (5-7.5 lbs) isn't reachable with either pair, so the app picks the closer/safer option (3 lbs) instead of pretending a perfect match exists. Both free weights and bands are computed this way now (bands compute by total resistance across every combination of owned colors, not just a single lighter color) — see `DATA_MODEL.md`'s "Computed warmup weight" section for the exact rule.
 
-Scope of this pass was **free weights only** for warmup snapping specifically — band "resistance" doesn't reduce the same way (it means switching to a different band, not a fractional one), so Resistance Band Curls and Single Arm Band Kick-Backs still show the trainer's plain-text warmup guidance there.
+**Equipment**, reached via a link on the Home Workout List, is where owned free weights and bands actually live — no longer hardcoded:
 
-The band inventory itself, though, is now known: **yellow=10, green=20, blue=30, black=40, red=50 lbs**, owned pairs summing when stacked (e.g. red+green=70). That's used in Edit Mode's band picker (a swatch per color, weight computed live from what's selected) and everywhere a band load is displayed or charted — see `DATA_MODEL.md`'s `Load` section. It isn't used for warmup snapping yet; that'd still need deciding what "50-75%" even means for a band (a lighter color, not a fractional weight).
-
-The equipment lists themselves are hardcoded constants (`OWNED_FREE_WEIGHTS`, `BAND_WEIGHTS` in `src/lib/equipment.ts`) — there's no settings screen to edit them yet. Worth revisiting if equipment changes (e.g. a 5 lb pair gets added, or a band wears out and its effective resistance shifts).
+- **Dumbbells and Kettlebells, as two separate sections** — same add/remove list pattern (same as cues/tags elsewhere) for each, but with different copy: Dumbbells notes that an entry is assumed to be an owned *pair* ("a 10 lb pair is just '10'", not the combined 20 lb total), while Kettlebells makes clear each entry is counted individually, no pair assumption. Neither restricts what you can dial in for a *working* target, which stays free-form on purpose — a working weight can be anything, and shouldn't be capped by what's on file. The two lists are only kept apart for how this screen tracks and labels them; a warmup suggestion doesn't care which one a weight came from, so they're combined into one pool wherever that's computed.
+- **Bands**: the five colors (yellow=10, green=20, blue=30, black=40, red=50 lbs — a fixed, physical property of the bands themselves, not editable) shown as toggleable swatches, marking which you actually own. This also doesn't restrict the working-target band picker in Edit Mode, which still shows and allows all five regardless of ownership — equipment ownership is scoped to warmup suggestions only, an explicit and deliberate MVP simplification, not an oversight.
+- **The inline accelerator**: dialing in a working free weight that isn't already owned (checked against both lists) surfaces a small "+ Add {N} lbs to your equipment" prompt right there in Edit Mode — the moment you'd actually know about a new weight is when you're setting it as a target, not a separate trip to a settings screen later. It defaults to adding as a dumbbell (this app's exercises are overwhelmingly dumbbell-based); reclassify as a kettlebell on the Equipment screen itself if that's what it actually was. No equivalent prompt for bands, since band ownership is a yes/no toggle on a fixed catalog, not an open-ended value like weight.
 
 ## Open items
 
 - Which exercise is "featured" first in the welcome-screen sparkline carousel.
 - Visual treatment for superset grouping on Workout Overview (bracket/border/label).
-- Reordering mechanics in the create-workout flow (drag vs. up/down controls).
 - Whether "Edit Exercise Details" is prompted immediately after inline-creating a new exercise, or purely accessed later from Movement Detail.
-- Restructuring an already-saved workout (reorder/add/remove exercises) — explicitly deferred; for now, structural changes mean creating a new workout.
 - PT Workouts, Gym Workouts — future scope, unmodeled.
 - Visual design (this doc is behavior/structure, not UI mockups).
 
 ## Future ideas (explicitly post-MVP)
 
 - **Apple Health / Watch integration — heart rate only.** Not being designed now. Noting one likely dependency for whenever we pick this up: heart rate would need to be correlated against a workout's *start and end time*, but MVP's completion log is a single timestamp ("I did this today"), not a duration — pulling heart rate meaningfully probably requires richer session tracking than what §8 currently scopes.
+
+- **AI-generated workout.** Not being designed now. Would take exercise history/progression, available equipment (`OWNED_FREE_WEIGHTS`/`BAND_WEIGHTS`), and desired session duration into account, asking a few guiding questions first (focus area, time available, anything sore/off today) before proposing a session. The real fork isn't the reasoning — the existing data model already carries most of the needed inputs — it's that this would be the app's *first* feature requiring a network call and API key; everything today is offline/localStorage only, so this is an architectural decision, not just a new screen. **MVP shape:** a short guided form (2-3 questions) feeding a single AI call that proposes a one-off session built from the existing exercise library — not necessarily saved as a reusable workout template the way Create Home Workout's output is. A smaller, fully-offline first step worth considering before wiring up real AI: a rules-based "suggest what's due" heuristic (e.g. surface exercises that haven't progressed in a while), no network dependency at all.
+
+- **Camera-based form analysis.** Not being designed now. Feasible at a modest scope, not at a general one — full form coaching across arbitrary exercises is a large, dedicated computer-vision undertaking (what commercial fitness-tech products invest real engineering teams in), not a natural incremental step from here. **MVP shape:** pick one or two exercises with simple, geometric form checks (e.g. knee tracking on a lunge, left/right symmetry on the shoulder-rehab asymmetric exercises — see `asymmetryNote` in `DATA_MODEL.md`), using client-side pose estimation (e.g. MediaPipe or TensorFlow.js, running entirely in-browser off the phone camera, no video leaving the device) to flag deviations against a few hand-picked thresholds rather than open-ended AI judgment. A cloud vision-LLM route (sending frames to Claude) is more flexible but reintroduces the same network/API dependency as the AI-workout idea above, adds latency that works against real-time correction, and sends video off-device.

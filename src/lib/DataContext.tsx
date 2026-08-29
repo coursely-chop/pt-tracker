@@ -1,22 +1,51 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { deleteNote as deleteNoteFromStorage, loadData, saveCompletion, saveExercise, saveNote } from "./storage";
+import {
+  addExercise,
+  addWorkout,
+  deleteNote as deleteNoteFromStorage,
+  deleteWorkout as deleteWorkoutFromStorage,
+  loadData,
+  saveCompletion,
+  saveEquipment,
+  saveExercise,
+  saveNote,
+  saveWorkout,
+} from "./storage";
 import { todayISO } from "./format";
+import { slugify } from "./slug";
 import type {
+  Equipment,
   Exercise,
   ExerciseLinks,
   ExerciseTarget,
   Note,
   ProgressionEntry,
   SeedData,
+  Superset,
   Workout,
   WorkoutCompletion,
+  WorkoutProtocol,
 } from "../types";
 
 export interface ExerciseDetailsUpdate {
-  warmup: string | null;
+  warmupReps: number | null;
   progressionRule: string | null;
   cues: string[];
+  tags: string[];
   links: ExerciseLinks;
+}
+
+export interface NewExerciseInput {
+  name: string;
+  target: ExerciseTarget;
+  tags: string[];
+}
+
+export interface NewWorkoutInput {
+  name: string;
+  dynamicStretching: string;
+  protocol: WorkoutProtocol;
+  supersets: Superset[];
 }
 
 interface DataContextValue {
@@ -24,10 +53,20 @@ interface DataContextValue {
   workouts: Workout[];
   completions: WorkoutCompletion[];
   notes: Note[];
+  equipment: Equipment;
   getExercise: (id: string) => Exercise | undefined;
   getWorkout: (id: string) => Workout | undefined;
-  updateExerciseTarget: (exerciseId: string, newTarget: ExerciseTarget, newEntries: ProgressionEntry[]) => void;
+  updateExerciseTarget: (
+    exerciseId: string,
+    newTarget: ExerciseTarget,
+    newEntries: ProgressionEntry[],
+    warmupLoad: Exercise["warmupLoad"]
+  ) => void;
   updateExerciseDetails: (exerciseId: string, updates: ExerciseDetailsUpdate) => void;
+  createExercise: (input: NewExerciseInput) => string;
+  createWorkout: (input: NewWorkoutInput) => string;
+  updateWorkout: (workoutId: string, input: NewWorkoutInput) => void;
+  deleteWorkout: (workoutId: string) => void;
   logWorkout: (workoutId: string) => void;
   addNote: (exerciseId: string, text: string) => void;
   updateNoteText: (noteId: string, text: string) => void;
@@ -39,6 +78,11 @@ interface DataContextValue {
   editingDetailsExerciseId: string | null;
   openEditDetails: (exerciseId: string) => void;
   closeEditDetails: () => void;
+  addOwnedDumbbell: (lbs: number) => void;
+  removeOwnedDumbbell: (lbs: number) => void;
+  addOwnedKettlebell: (lbs: number) => void;
+  removeOwnedKettlebell: (lbs: number) => void;
+  toggleOwnedBand: (color: string) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -51,13 +95,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const getExercise = (id: string) => data.exercises.find((e) => e.id === id);
   const getWorkout = (id: string) => data.workouts.find((w) => w.id === id);
 
-  function updateExerciseTarget(exerciseId: string, newTarget: ExerciseTarget, newEntries: ProgressionEntry[]) {
+  function updateExerciseTarget(
+    exerciseId: string,
+    newTarget: ExerciseTarget,
+    newEntries: ProgressionEntry[],
+    warmupLoad: Exercise["warmupLoad"]
+  ) {
     const exercise = data.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
     const updated: Exercise = {
       ...exercise,
       target: newTarget,
       progression: [...exercise.progression, ...newEntries],
+      warmupLoad,
     };
     setData(saveExercise(updated));
   }
@@ -70,6 +120,56 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!exercise) return;
     const updated: Exercise = { ...exercise, ...updates };
     setData(saveExercise(updated));
+  }
+
+  function createExercise(input: NewExerciseInput): string {
+    const id = slugify(
+      input.name,
+      data.exercises.map((e) => e.id)
+    );
+    const exercise: Exercise = {
+      id,
+      name: input.name,
+      target: input.target,
+      warmupReps: null,
+      warmupLoad: null,
+      progressionRule: null,
+      cues: [],
+      tags: input.tags,
+      links: {},
+      progression: [],
+    };
+    setData(addExercise(exercise));
+    return id;
+  }
+
+  function createWorkout(input: NewWorkoutInput): string {
+    const id = slugify(
+      input.name,
+      data.workouts.map((w) => w.id)
+    );
+    const workout: Workout = {
+      id,
+      name: input.name,
+      structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
+      supersets: input.supersets,
+    };
+    setData(addWorkout(workout));
+    return id;
+  }
+
+  function updateWorkout(workoutId: string, input: NewWorkoutInput) {
+    const workout: Workout = {
+      id: workoutId,
+      name: input.name,
+      structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
+      supersets: input.supersets,
+    };
+    setData(saveWorkout(workout));
+  }
+
+  function deleteWorkout(workoutId: string) {
+    setData(deleteWorkoutFromStorage(workoutId));
   }
 
   function logWorkout(workoutId: string) {
@@ -105,15 +205,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(deleteNoteFromStorage(noteId));
   }
 
+  function addOwnedDumbbell(lbs: number) {
+    if (data.equipment.ownedDumbbells.includes(lbs)) return;
+    const ownedDumbbells = [...data.equipment.ownedDumbbells, lbs].sort((a, b) => a - b);
+    setData(saveEquipment({ ...data.equipment, ownedDumbbells }));
+  }
+
+  function removeOwnedDumbbell(lbs: number) {
+    const ownedDumbbells = data.equipment.ownedDumbbells.filter((w) => w !== lbs);
+    setData(saveEquipment({ ...data.equipment, ownedDumbbells }));
+  }
+
+  function addOwnedKettlebell(lbs: number) {
+    if (data.equipment.ownedKettlebells.includes(lbs)) return;
+    const ownedKettlebells = [...data.equipment.ownedKettlebells, lbs].sort((a, b) => a - b);
+    setData(saveEquipment({ ...data.equipment, ownedKettlebells }));
+  }
+
+  function removeOwnedKettlebell(lbs: number) {
+    const ownedKettlebells = data.equipment.ownedKettlebells.filter((w) => w !== lbs);
+    setData(saveEquipment({ ...data.equipment, ownedKettlebells }));
+  }
+
+  function toggleOwnedBand(color: string) {
+    const owned = data.equipment.ownedBands;
+    const ownedBands = owned.includes(color) ? owned.filter((c) => c !== color) : [...owned, color];
+    setData(saveEquipment({ ...data.equipment, ownedBands }));
+  }
+
   const value: DataContextValue = {
     exercises: data.exercises,
     workouts: data.workouts,
     completions: data.completions,
     notes: data.notes,
+    equipment: data.equipment,
     getExercise,
     getWorkout,
     updateExerciseTarget,
     updateExerciseDetails,
+    createExercise,
+    createWorkout,
+    updateWorkout,
+    deleteWorkout,
     logWorkout,
     addNote,
     updateNoteText,
@@ -125,6 +258,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     editingDetailsExerciseId,
     openEditDetails: setEditingDetailsExerciseId,
     closeEditDetails: () => setEditingDetailsExerciseId(null),
+    addOwnedDumbbell,
+    removeOwnedDumbbell,
+    addOwnedKettlebell,
+    removeOwnedKettlebell,
+    toggleOwnedBand,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
