@@ -1,11 +1,14 @@
 :root {
-  --bg: #0f1115;
-  --surface: #1a1d24;
-  --border: #2a2e37;
-  --text: #f2f3f5;
-  --text-muted: #9a9fac;
-  --accent: #5b8cff;
-  --radius: 12px;
+  --bg: oklch(0.19 0.02 245);
+  --surface: oklch(0.235 0.026 245);
+  --border: oklch(0.33 0.025 245);
+  --text: oklch(0.95 0.015 235);
+  --text-muted: oklch(0.68 0.02 235);
+  --accent: oklch(0.72 0.13 260);
+  --radius: 18px;
+  --radius-sm: 14px;
+  --font-display: "Zilla Slab", Georgia, serif;
+  --font-body: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
 }
 
@@ -23,7 +26,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -35,8 +38,9 @@ body {
 }
 
 .screen-title {
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 4px 0 20px;
 }
 
@@ -53,7 +57,7 @@ body {
   border-bottom: 1px dashed var(--border);
   background: none;
   color: var(--text);
-  font-family: inherit;
+  font-family: var(--font-display);
   padding: 0 0 4px;
 }
 
@@ -91,6 +95,7 @@ body {
   border-radius: 999px;
   color: var(--accent);
   text-decoration: none;
+  box-shadow: 0 3px 10px oklch(0.08 0.02 245 / 0.4);
 }
 
 .icon-link:hover {
@@ -123,9 +128,11 @@ body {
   margin-bottom: 12px;
   text-decoration: none;
   color: var(--text);
+  box-shadow: 0 4px 16px oklch(0.08 0.02 245 / 0.35);
 }
 
 .workout-card-name {
+  font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
   margin-bottom: 4px;
@@ -184,6 +191,7 @@ body {
 .exercise-name {
   display: block;
   color: var(--text);
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   text-decoration: none;
@@ -196,7 +204,7 @@ body {
 .set-lines-row {
   display: flex;
   margin-top: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   overflow: hidden;
 }
@@ -228,7 +236,7 @@ body {
 }
 
 .set-line-btn:active {
-  background: rgba(91, 140, 255, 0.22);
+  background: color-mix(in oklch, var(--accent) 22%, transparent);
 }
 
 .set-line-btn:disabled {
@@ -318,7 +326,7 @@ body {
   border-radius: var(--radius);
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -370,13 +378,13 @@ body {
   justify-content: center;
   border-radius: 50%;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
   border: none;
   font-size: 28px;
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 22px oklch(0.55 0.13 260 / 0.45);
 }
 
 /* Movement Detail */
@@ -451,7 +459,7 @@ body {
 }
 
 .detail-set-lines-btn:active {
-  background: rgba(91, 140, 255, 0.16);
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
 }
 
 .detail-set-lines-btn:disabled {
@@ -501,7 +509,7 @@ body {
 .detail-actions .edit-btn {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--bg);
 }
 
 .detail-actions button:disabled,
@@ -566,7 +574,9 @@ body {
 }
 
 .sheet-header h2 {
+  font-family: var(--font-display);
   font-size: 18px;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -753,7 +763,7 @@ body {
 .equipment-add-confirm {
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
 }
 
 .band-picker {
@@ -795,7 +805,7 @@ body {
   border-radius: var(--radius);
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -1093,7 +1103,7 @@ body {
 
 .note-card {
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
 }
 
@@ -1109,13 +1119,13 @@ body {
 
 @keyframes note-pin-flash {
   0% {
-    box-shadow: 0 0 0 0 rgba(91, 140, 255, 0);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
   }
   25% {
-    box-shadow: 0 0 0 2px rgba(91, 140, 255, 0.45);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 45%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(91, 140, 255, 0);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
   }
 }
 
@@ -1218,7 +1228,7 @@ body {
 .note-add-save {
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
 }
 
 .note-delete-btn {
@@ -1232,7 +1242,7 @@ body {
   flex: 1;
   border: none;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
 }
 
 .kind-picker {
@@ -1256,7 +1266,7 @@ body {
 .kind-picker-btn.selected {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(91, 140, 255, 0.1);
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
 }
 
 /* Exercise picker (Create New Home Workout) */
@@ -1321,7 +1331,7 @@ body {
 
 .builder-superset {
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 12px;
   margin-bottom: 12px;
 }
