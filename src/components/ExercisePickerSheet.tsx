@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { LoadEditor, REPS_STEP, Stepper } from "./EditModeSheet";
+import { LoadEditor, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
 import { searchExercises } from "../lib/exerciseSearch";
+import { computeWarmupLoad } from "../lib/format";
+import { useBodyScrollLock } from "../lib/useBodyScrollLock";
 import { useData } from "../lib/DataContext";
 import type { ExerciseTarget, Load } from "../types";
 
@@ -56,26 +58,35 @@ interface ExercisePickerSheetProps {
 type Mode = "browse" | "create";
 
 /** Reached when adding an exercise to a slot in Create New Home Workout: search the
- * existing library by name or tag, or fall through to "+ New Exercise" to define one
- * that doesn't exist yet — same sheet, toggled content, matching how Notes toggles
- * between its add/edit views rather than stacking a second sheet. */
+ * existing library by name or tag, or — once a search matches nothing — create one
+ * that doesn't exist yet, right in that empty-results spot, rather than a separate
+ * "+ New Exercise" trigger. Same sheet, toggled content, matching how Notes toggles
+ * between its add/edit views rather than stacking a second sheet. Full-screen,
+ * top-aligned takeover (not a bottom sheet like Edit Mode) since this one has real
+ * length — search results, and potentially the whole creation form — and locks
+ * background scroll for as long as it's open, so it isn't a second scroll area
+ * fighting the page behind it. */
 export default function ExercisePickerSheet({ onClose, onSelect, excludeExerciseIds }: ExercisePickerSheetProps) {
   const { exercises } = useData();
   const [mode, setMode] = useState<Mode>("browse");
   const [query, setQuery] = useState("");
 
+  useBodyScrollLock();
+
   const results = searchExercises(exercises, query);
+  const trimmedQuery = query.trim();
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-backdrop sheet-backdrop-top" onClick={onClose}>
+      <div className="sheet sheet-fullscreen" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-header">
-          <h2>{mode === "browse" ? "Add Exercise" : "New Exercise"}</h2>
+          <h2>{mode === "browse" ? "Add Exercise" : "Create New Exercise"}</h2>
           <button type="button" className="sheet-close" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
+        <div className="sheet-scroll-body">
         {mode === "browse" ? (
           <>
             <input
@@ -102,48 +113,64 @@ export default function ExercisePickerSheet({ onClose, onSelect, excludeExercise
                   >
                     <div className="picker-item-name">{exercise.name}</div>
                     {alreadyAdded ? (
-                      <div className="picker-item-tags">Already in this superset</div>
+                      <div className="picker-item-tags">Already in this workout</div>
                     ) : (
                       exercise.tags.length > 0 && <div className="picker-item-tags">{exercise.tags.join(", ")}</div>
                     )}
                   </button>
                 );
               })}
-              {results.length === 0 && <div className="empty-state">No exercises match "{query}".</div>}
+              {results.length === 0 && trimmedQuery.length > 0 && (
+                <div className="picker-no-match">
+                  <div className="empty-state">No exercises match "{trimmedQuery}".</div>
+                  <button type="button" className="builder-primary-btn" onClick={() => setMode("create")}>
+                    Create "{trimmedQuery}" &amp; Add to Workout
+                  </button>
+                </div>
+              )}
             </div>
-            <button type="button" className="add-note-trigger picker-new-trigger" onClick={() => setMode("create")}>
-              + New Exercise
-            </button>
           </>
         ) : (
           <NewExerciseForm
-            onBack={() => setMode("browse")}
+            initialName={trimmedQuery}
             onCreate={(id) => {
               onSelect(id);
               onClose();
             }}
           />
         )}
+        </div>
       </div>
     </div>
   );
 }
 
 interface NewExerciseFormProps {
-  onBack: () => void;
+  initialName: string;
   onCreate: (exerciseId: string) => void;
 }
 
-function NewExerciseForm({ onBack, onCreate }: NewExerciseFormProps) {
-  const { createExercise } = useData();
-  const [name, setName] = useState("");
+type CreateTab = "working" | "warmup";
+
+function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
+  const { createExercise, equipment } = useData();
+  const [name, setName] = useState(initialName);
   const [asymmetric, setAsymmetric] = useState(false);
+  const [activeTab, setActiveTab] = useState<CreateTab>("working");
+
   const [reps, setReps] = useState(10);
   const [load, setLoad] = useState<Load>({ kind: "bodyweight" });
   const [leftReps, setLeftReps] = useState(10);
   const [rightReps, setRightReps] = useState(10);
   const [leftLoad, setLeftLoad] = useState<Load>({ kind: "bodyweight" });
   const [rightLoad, setRightLoad] = useState<Load>({ kind: "bodyweight" });
+
+  const [warmupReps, setWarmupReps] = useState(10);
+  const [warmupMatchesWorking, setWarmupMatchesWorking] = useState(true);
+  const [warmupLoad, setWarmupLoad] = useState<Load>({ kind: "bodyweight" });
+  const [leftWarmupLoad, setLeftWarmupLoad] = useState<Load>({ kind: "bodyweight" });
+  const [rightWarmupLoad, setRightWarmupLoad] = useState<Load>({ kind: "bodyweight" });
+
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
 
@@ -179,7 +206,13 @@ function NewExerciseForm({ onBack, onCreate }: NewExerciseFormProps) {
           sides: null,
         };
 
-    const id = createExercise({ name: name.trim(), target, tags });
+    const warmupLoadOverride = warmupMatchesWorking
+      ? null
+      : asymmetric
+        ? { left: leftWarmupLoad, right: rightWarmupLoad }
+        : warmupLoad;
+
+    const id = createExercise({ name: name.trim(), target, tags, warmupReps, warmupLoad: warmupLoadOverride });
     onCreate(id);
   }
 
@@ -202,27 +235,85 @@ function NewExerciseForm({ onBack, onCreate }: NewExerciseFormProps) {
         Left &amp; Right differ
       </label>
 
-      {asymmetric ? (
-        <div className="sides-editor">
-          <div className="side-editor">
-            <div className="side-editor-label">Left</div>
-            <LoadKindPicker load={leftLoad} setLoad={setLeftLoad} />
-            <LoadEditor load={leftLoad} setLoad={setLeftLoad} />
-            <Stepper value={leftReps} unit="reps" min={1} step={REPS_STEP} onChange={setLeftReps} />
+      <div className="kind-picker">
+        <button
+          type="button"
+          className={`kind-picker-btn${activeTab === "working" ? " selected" : ""}`}
+          onClick={() => setActiveTab("working")}
+        >
+          Working
+        </button>
+        <button
+          type="button"
+          className={`kind-picker-btn${activeTab === "warmup" ? " selected" : ""}`}
+          onClick={() => setActiveTab("warmup")}
+        >
+          Warmup
+        </button>
+      </div>
+
+      {activeTab === "working" ? (
+        asymmetric ? (
+          <div className="sides-editor">
+            <div className="side-editor">
+              <div className="side-editor-label">Left</div>
+              <LoadKindPicker load={leftLoad} setLoad={setLeftLoad} />
+              <LoadEditor load={leftLoad} setLoad={setLeftLoad} />
+              <Stepper value={leftReps} unit="reps" min={1} step={REPS_STEP} onChange={setLeftReps} />
+            </div>
+            <div className="side-editor">
+              <div className="side-editor-label">Right</div>
+              <LoadKindPicker load={rightLoad} setLoad={setRightLoad} />
+              <LoadEditor load={rightLoad} setLoad={setRightLoad} />
+              <Stepper value={rightReps} unit="reps" min={1} step={REPS_STEP} onChange={setRightReps} />
+            </div>
           </div>
-          <div className="side-editor">
-            <div className="side-editor-label">Right</div>
-            <LoadKindPicker load={rightLoad} setLoad={setRightLoad} />
-            <LoadEditor load={rightLoad} setLoad={setRightLoad} />
-            <Stepper value={rightReps} unit="reps" min={1} step={REPS_STEP} onChange={setRightReps} />
-          </div>
-        </div>
+        ) : (
+          <>
+            <LoadKindPicker load={load} setLoad={setLoad} />
+            <LoadEditor load={load} setLoad={setLoad} />
+            <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
+          </>
+        )
       ) : (
-        <>
-          <LoadKindPicker load={load} setLoad={setLoad} />
-          <LoadEditor load={load} setLoad={setLoad} />
-          <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
-        </>
+        <div className="edit-mode-section">
+          <div className="edit-mode-section-header">
+            <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
+            <label className="toggle-row toggle-row-inline">
+              <input
+                type="checkbox"
+                checked={warmupMatchesWorking}
+                onChange={(e) => setWarmupMatchesWorking(e.target.checked)}
+              />
+              Match Working (50-75%)
+            </label>
+          </div>
+
+          {asymmetric ? (
+            <div className="sides-editor">
+              <div className="side-editor">
+                <div className="side-editor-label">Left</div>
+                {warmupMatchesWorking ? (
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}</div>
+                ) : (
+                  <LoadEditor load={leftWarmupLoad} setLoad={setLeftWarmupLoad} />
+                )}
+              </div>
+              <div className="side-editor">
+                <div className="side-editor-label">Right</div>
+                {warmupMatchesWorking ? (
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}</div>
+                ) : (
+                  <LoadEditor load={rightWarmupLoad} setLoad={setRightWarmupLoad} />
+                )}
+              </div>
+            </div>
+          ) : warmupMatchesWorking ? (
+            <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
+          ) : (
+            <LoadEditor load={warmupLoad} setLoad={setWarmupLoad} />
+          )}
+        </div>
       )}
 
       <div className="detail-field">
@@ -255,14 +346,9 @@ function NewExerciseForm({ onBack, onCreate }: NewExerciseFormProps) {
         </div>
       </div>
 
-      <div className="note-add-actions">
-        <button type="button" className="note-add-cancel" onClick={onBack}>
-          Back
-        </button>
-        <button type="button" className="save-btn picker-create-btn" onClick={handleCreate} disabled={!canCreate}>
-          Create
-        </button>
-      </div>
+      <button type="button" className="save-btn picker-create-btn" onClick={handleCreate} disabled={!canCreate}>
+        Create{name.trim() ? ` "${name.trim()}"` : ""} &amp; Add to Workout
+      </button>
     </>
   );
 }

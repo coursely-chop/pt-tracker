@@ -125,13 +125,13 @@ export default function EditDetailsSheet() {
       <div className="sheet-backdrop" onClick={requestClose}>
         <div className="sheet" onClick={(e) => e.stopPropagation()}>
           <div className="discard-confirm">
-            <div className="discard-confirm-text">Discard unsaved changes?</div>
+            <div className="discard-confirm-text">Save Unsaved Changes?</div>
             <div className="discard-confirm-actions">
-              <button type="button" className="discard-cancel-btn" onClick={() => setConfirmingDiscard(false)}>
-                Cancel
-              </button>
-              <button type="button" className="discard-btn" onClick={closeEditDetails}>
+              <button type="button" className="confirm-discard-btn" onClick={closeEditDetails}>
                 Discard
+              </button>
+              <button type="button" className="confirm-save-btn" onClick={handleSave}>
+                Save
               </button>
             </div>
           </div>
@@ -156,14 +156,7 @@ export default function EditDetailsSheet() {
             This exercise has a warmup
           </label>
           {hasWarmup && (
-            <>
-              <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={1} onChange={setWarmupReps} />
-              <div className="detail-hint">
-                The weight or band itself is set from Edit Mode (tap the Warmup panel on Workout Overview or
-                Movement Detail) — matched to 50-75% of the working target by default, or set independently if you
-                uncheck "Match Working" there.
-              </div>
-            </>
+            <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={1} onChange={setWarmupReps} />
           )}
         </div>
 

@@ -40,11 +40,12 @@ function toBuilderSupersets(workout: Workout): BuilderSuperset[] {
     }));
 }
 
-/** All exercise ids already used anywhere in a superset (primary or alternate) —
- * what the exercise picker excludes, so the same exercise can't end up as two
- * slots' primary, or as its own slot's alternate, within one superset. */
-function supersetExerciseIds(superset: BuilderSuperset): string[] {
-  return superset.slots.flatMap((slot) => slot.exerciseIds);
+/** All exercise ids already used anywhere in the workout (primary or alternate,
+ * in any superset) — what the exercise picker excludes, greyed out with
+ * "Already in this workout," so the same exercise can't end up twice across
+ * different supersets either, not just within one. */
+function workoutExerciseIds(supersets: BuilderSuperset[]): string[] {
+  return supersets.flatMap((s) => s.slots.flatMap((slot) => slot.exerciseIds));
 }
 
 /** A guided, single-scrolling-page flow mirroring the underlying structure directly:
@@ -317,18 +318,18 @@ export default function WorkoutBuilder() {
             );
           })}
 
-          <button type="button" className="add-note-trigger" onClick={() => setPickerForSuperset(superset.key)}>
+          <button type="button" className="builder-primary-btn" onClick={() => setPickerForSuperset(superset.key)}>
             + Add Exercise
           </button>
         </div>
       ))}
 
-      <button type="button" className="add-note-trigger builder-add-superset-btn" onClick={addSuperset}>
+      <button type="button" className="builder-secondary-btn builder-add-superset-btn" onClick={addSuperset}>
         + Add Superset
       </button>
 
-      <div className="detail-section">
-        <div className="detail-section-label">Protocol</div>
+      <details className="detail-section builder-protocol">
+        <summary>Protocol</summary>
         <div className="side-detail-grid">
           <Stepper
             label="Working Sets"
@@ -392,7 +393,7 @@ export default function WorkoutBuilder() {
             onChange={(e) => updateProtocol({ notes: e.target.value })}
           />
         </div>
-      </div>
+      </details>
 
       <div className="detail-field">
         <div className="slider-label">Dynamic Stretching</div>
@@ -432,12 +433,7 @@ export default function WorkoutBuilder() {
         <ExercisePickerSheet
           onClose={() => setPickerForSuperset(null)}
           onSelect={(exerciseId) => addSlot(pickerForSuperset, exerciseId)}
-          excludeExerciseIds={
-            (() => {
-              const superset = supersets.find((s) => s.key === pickerForSuperset);
-              return superset ? supersetExerciseIds(superset) : [];
-            })()
-          }
+          excludeExerciseIds={workoutExerciseIds(supersets)}
         />
       )}
 
@@ -447,12 +443,7 @@ export default function WorkoutBuilder() {
           onSelect={(exerciseId) =>
             addAlternate(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseId)
           }
-          excludeExerciseIds={
-            (() => {
-              const superset = supersets.find((s) => s.key === pickerForAlternate.supersetKey);
-              return superset ? supersetExerciseIds(superset) : [];
-            })()
-          }
+          excludeExerciseIds={workoutExerciseIds(supersets)}
         />
       )}
     </div>

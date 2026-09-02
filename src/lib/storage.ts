@@ -12,6 +12,7 @@ interface LegacyEquipment {
   ownedKettlebells?: number[];
   ownedBands?: string[];
   ownedLoopBands?: string[];
+  limitWeightToOwned?: boolean;
 }
 
 const STORAGE_KEY = "pt-tracker-data";
@@ -71,6 +72,7 @@ export function loadData(): SeedData {
           ownedKettlebells: legacy?.ownedKettlebells ?? DEFAULT_OWNED_KETTLEBELLS,
           ownedBands: legacy?.ownedBands ?? [...BAND_COLORS],
           ownedLoopBands: legacy?.ownedLoopBands ?? DEFAULT_OWNED_LOOP_BANDS,
+          limitWeightToOwned: legacy?.limitWeightToOwned ?? true,
         };
       })(),
     };

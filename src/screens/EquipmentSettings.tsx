@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Stepper, WEIGHT_STEP } from "../components/EditModeSheet";
+import { Stepper, buildWeightSequence } from "../components/EditModeSheet";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
 import { capitalize } from "../lib/format";
 import { useData } from "../lib/DataContext";
@@ -52,7 +52,7 @@ function WeightList({ label, singularLabel, hint, emptyText, weights, onAdd, onR
 
       {adding ? (
         <div className="equipment-add-control">
-          <Stepper large value={newWeight} unit="lbs" min={WEIGHT_STEP} step={WEIGHT_STEP} onChange={setNewWeight} />
+          <Stepper large value={newWeight} unit="lbs" step={1} sequence={buildWeightSequence(false)} onChange={setNewWeight} />
           <div className="equipment-add-actions">
             <button type="button" className="equipment-add-cancel" onClick={() => setAdding(false)}>
               Cancel
@@ -86,6 +86,7 @@ export default function EquipmentSettings() {
     removeOwnedKettlebell,
     toggleOwnedBand,
     toggleOwnedLoopBand,
+    setLimitWeightToOwned,
   } = useData();
 
   return (
@@ -101,6 +102,15 @@ export default function EquipmentSettings() {
       </h1>
 
       <p className="hint-box screen-intro">Add your home equipment to enable warmup suggestion for home workouts.</p>
+
+      <label className="toggle-row">
+        <input
+          type="checkbox"
+          checked={equipment.limitWeightToOwned}
+          onChange={(e) => setLimitWeightToOwned(e.target.checked)}
+        />
+        Limit the weight stepper to equipment I own
+      </label>
 
       <WeightList
         label="Dumbbells"

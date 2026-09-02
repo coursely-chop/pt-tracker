@@ -7,7 +7,7 @@ import type { BandLoad, Exercise, ExerciseTarget, Load, LoopBandLoad, Progressio
 /** Read-only text for the "Match Working" preview — no band dots needed here,
  * unlike the glanceable views (Workout Overview, Movement Detail); a plain
  * label is enough for a value you can't currently touch. */
-function formatLoadPreview(load: Load): string {
+export function formatLoadPreview(load: Load): string {
   if (load.kind === "bodyweight") return "Bodyweight";
   if (load.kind === "freeWeight") return `${load.lbs} lbs`;
   if (load.kind === "loopBand") return load.strengths.map(capitalize).join(" & ") || "—";
@@ -16,11 +16,18 @@ function formatLoadPreview(load: Load): string {
   return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
 }
 
-/** 1 lb per tap — fine enough to reach any real dumbbell in a home set,
- * including odd-numbered ones like a 3 lb rehab weight that a coarser
- * 2.5 lb step could never land on exactly. */
-export const WEIGHT_STEP = 1;
 export const REPS_STEP = 1;
+
+/** Real dumbbells don't jump in even intervals at the light end (a 3 lb rehab
+ * weight sits between bodyweight and 5), so the weight stepper walks this
+ * fixed sequence — 0 (bodyweight), 3, 5, then a plain 2.5 lb ladder — rather
+ * than doing arithmetic by a flat step. Capped at 300 lbs, comfortably past
+ * anything a home stepper needs to reach. */
+export function buildWeightSequence(includeBodyweight = true): number[] {
+  const sequence = includeBodyweight ? [0, 3, 5] : [3, 5];
+  for (let w = 7.5; w <= 300; w += 2.5) sequence.push(w);
+  return sequence;
+}
 
 function cloneLoad(load: Load): Load {
   return JSON.parse(JSON.stringify(load));
@@ -28,6 +35,14 @@ function cloneLoad(load: Load): Load {
 
 function roundToStep(value: number, step: number): number {
   return Math.round(value / step) * step;
+}
+
+function stepSequence(value: number, sequence: number[], direction: 1 | -1): number {
+  if (direction === 1) return sequence.find((v) => v > value) ?? value;
+  for (let i = sequence.length - 1; i >= 0; i--) {
+    if (sequence[i] < value) return sequence[i];
+  }
+  return sequence[0];
 }
 
 interface StepperProps {
@@ -44,14 +59,21 @@ interface StepperProps {
    * a new weight" flow) — the default size is tuned for a sheet already dense
    * with controls, where this one is the only thing on the screen. */
   large?: boolean;
+  /** When set, +/- walk this ascending list of values instead of doing
+   * arithmetic by `step`/`min` — the weight stepper's non-uniform sequence,
+   * or an owned-equipment list. Takes over decrement/increment/disabled
+   * entirely; `step`/`min` are ignored while this is set. */
+  sequence?: number[];
 }
 
-/** Gains here are incremental by design (1 lb or 1 rep per tap) — every tap
- * moves exactly one step, so there's no drag-to-an-arbitrary-position control
- * to get wrong. The value stays centered; − and + sit at each end. */
-export function Stepper({ label, value, unit, step, min = 0, onChange, formatValue, large }: StepperProps) {
-  const decrement = () => onChange(Math.max(min, roundToStep(value - step, step)));
-  const increment = () => onChange(roundToStep(value + step, step));
+/** Gains here are incremental by design (one tap per step or sequence entry) —
+ * every tap moves exactly one notch, so there's no drag-to-an-arbitrary-position
+ * control to get wrong. The value stays centered; − and + sit at each end. */
+export function Stepper({ label, value, unit, step, min = 0, onChange, formatValue, large, sequence }: StepperProps) {
+  const atFloor = sequence ? value <= sequence[0] : value <= min;
+  const decrement = () =>
+    onChange(sequence ? stepSequence(value, sequence, -1) : Math.max(min, roundToStep(value - step, step)));
+  const increment = () => onChange(sequence ? stepSequence(value, sequence, 1) : roundToStep(value + step, step));
 
   return (
     <div className="stepper-field">
@@ -61,7 +83,7 @@ export function Stepper({ label, value, unit, step, min = 0, onChange, formatVal
           type="button"
           className={`stepper-btn${large ? " stepper-btn-lg" : ""}`}
           onClick={decrement}
-          disabled={value <= min}
+          disabled={atFloor}
           aria-label={`Decrease ${label ?? unit}`}
         >
           −
@@ -104,6 +126,7 @@ export default function EditModeSheet() {
   const [warmupOverrideLoad, setWarmupOverrideLoad] = useState<Load>({ kind: "bodyweight" });
   const [warmupOverrideLeftLoad, setWarmupOverrideLeftLoad] = useState<Load>({ kind: "bodyweight" });
   const [warmupOverrideRightLoad, setWarmupOverrideRightLoad] = useState<Load>({ kind: "bodyweight" });
+  const [warmupReps, setWarmupReps] = useState(1);
 
   // Re-initialize form state only when a (possibly different) exercise is opened,
   // not on every subsequent data write elsewhere in the app.
@@ -125,6 +148,7 @@ export default function EditModeSheet() {
     }
     setReps(target.reps ?? target.repRange.min);
 
+    setWarmupReps(exercise.warmupReps ?? 1);
     setWarmupLinked(warmupLoad == null);
     if (startAsymmetric && target.sides) {
       const override = warmupLoad && "left" in warmupLoad ? warmupLoad : null;
@@ -188,7 +212,12 @@ export default function EditModeSheet() {
         ? { left: warmupOverrideLeftLoad, right: warmupOverrideRightLoad }
         : warmupOverrideLoad;
 
-    updateExerciseTarget(exercise.id, newTarget, entries, newWarmupLoad);
+    // Only this sheet's own warmup section (shown when the exercise already
+    // has one) can change the rep count — an exercise with no warmup at all
+    // has nothing here to edit, so its warmupReps (null) passes through as-is.
+    const newWarmupReps = exercise.warmupReps != null ? warmupReps : exercise.warmupReps;
+
+    updateExerciseTarget(exercise.id, newTarget, entries, newWarmupLoad, newWarmupReps);
     closeEditMode();
   }
 
@@ -210,7 +239,7 @@ export default function EditModeSheet() {
         {hasWarmup && (
           <div className="edit-mode-section">
             <div className="edit-mode-section-header">
-              <div className="slider-label">Warmup ({exercise.warmupReps} reps)</div>
+              <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
               <label className="toggle-row toggle-row-inline">
                 <input
                   type="checkbox"
@@ -321,19 +350,27 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
   if (load.kind === "bodyweight" || load.kind === "freeWeight") {
     const lbs = load.kind === "freeWeight" ? load.lbs : 0;
     const isOwned = lbs === 0 || equipment.ownedDumbbells.includes(lbs) || equipment.ownedKettlebells.includes(lbs);
+    const ownedWeights = [...new Set([...equipment.ownedDumbbells, ...equipment.ownedKettlebells])].sort(
+      (a, b) => a - b
+    );
+    // "Limit to what I own" (Equipment Settings) swaps the fixed 0/3/5/+2.5
+    // ladder for just your actual dumbbells/kettlebells — falls back to the
+    // fixed ladder if nothing's owned yet, since a stepper limited to only
+    // "Bodyweight" isn't a real choice, it's just stuck.
+    const sequence =
+      equipment.limitWeightToOwned && ownedWeights.length > 0 ? [0, ...ownedWeights] : buildWeightSequence();
     return (
       <div className="load-editor">
         <Stepper
           value={lbs}
           unit="lbs"
-          min={0}
-          step={WEIGHT_STEP}
+          step={1}
+          sequence={sequence}
           formatValue={(v) => (v === 0 ? "Bodyweight" : `${v} lbs`)}
           onChange={(v) => setLoad(v === 0 ? { kind: "bodyweight" } : { kind: "freeWeight", lbs: v })}
         />
-        {/* Working weight is deliberately free-form — it isn't restricted to owned
-            equipment — but if you dial in something new, this is the moment to
-            capture it, rather than a separate trip to Equipment settings later.
+        {/* Only fires in the unrestricted (fixed-ladder) mode — every value the
+            owned-only sequence can reach is, by construction, already owned.
             Defaults to dumbbell (this app's exercises are overwhelmingly
             dumbbell-based) — reclassify as a kettlebell in Equipment Settings
             if that's what it actually was. */}

@@ -449,6 +449,7 @@
       "light",
       "moderate",
       "strong"
-    ]
+    ],
+    "limitWeightToOwned": true
   }
 }

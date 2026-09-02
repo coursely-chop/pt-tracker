@@ -166,6 +166,11 @@ export interface Equipment {
   ownedKettlebells: number[];
   ownedBands: string[];
   ownedLoopBands: string[];
+  /** When true (the default), the free-weight stepper in Edit Mode and New
+   * Exercise only walks owned dumbbell/kettlebell values instead of the
+   * fixed 0/3/5/+2.5 sequence — doesn't apply to Equipment's own "add a new
+   * weight" stepper, where limiting to owned weights would be circular. */
+  limitWeightToOwned: boolean;
 }
 
 export interface SeedData {

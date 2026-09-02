@@ -39,6 +39,11 @@ export interface NewExerciseInput {
   name: string;
   target: ExerciseTarget;
   tags: string[];
+  /** Omit to fall back to createExercise's own default (matching the working
+   * reps) — pass explicitly once the New Exercise form lets the warmup be
+   * configured directly, rather than always deriving it. */
+  warmupReps?: number | null;
+  warmupLoad?: Exercise["warmupLoad"];
 }
 
 export interface NewWorkoutInput {
@@ -60,7 +65,8 @@ interface DataContextValue {
     exerciseId: string,
     newTarget: ExerciseTarget,
     newEntries: ProgressionEntry[],
-    warmupLoad: Exercise["warmupLoad"]
+    warmupLoad: Exercise["warmupLoad"],
+    warmupReps: Exercise["warmupReps"]
   ) => void;
   updateExerciseDetails: (exerciseId: string, updates: ExerciseDetailsUpdate) => void;
   createExercise: (input: NewExerciseInput) => string;
@@ -84,6 +90,7 @@ interface DataContextValue {
   removeOwnedKettlebell: (lbs: number) => void;
   toggleOwnedBand: (color: string) => void;
   toggleOwnedLoopBand: (strength: string) => void;
+  setLimitWeightToOwned: (limit: boolean) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -100,7 +107,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     exerciseId: string,
     newTarget: ExerciseTarget,
     newEntries: ProgressionEntry[],
-    warmupLoad: Exercise["warmupLoad"]
+    warmupLoad: Exercise["warmupLoad"],
+    warmupReps: Exercise["warmupReps"]
   ) {
     const exercise = data.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
@@ -109,6 +117,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       target: newTarget,
       progression: [...exercise.progression, ...newEntries],
       warmupLoad,
+      warmupReps,
     };
     setData(saveExercise(updated));
   }
@@ -128,12 +137,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       input.name,
       data.exercises.map((e) => e.id)
     );
+    const { target } = input;
+    // New exercises start with a warmup on by default (matching the same rep
+    // count as working) rather than none — "no warmup" is something you opt
+    // out of via Edit Details, not the default for something never reviewed.
+    const defaultWarmupReps =
+      target.perSide && target.sides
+        ? Math.min(target.sides.left.reps, target.sides.right.reps)
+        : target.reps ?? target.repRange.min;
     const exercise: Exercise = {
       id,
       name: input.name,
       target: input.target,
-      warmupReps: null,
-      warmupLoad: null,
+      warmupReps: input.warmupReps !== undefined ? input.warmupReps : defaultWarmupReps,
+      warmupLoad: input.warmupLoad !== undefined ? input.warmupLoad : null,
       progressionRule: null,
       cues: [],
       tags: input.tags,
@@ -240,6 +257,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveEquipment({ ...data.equipment, ownedLoopBands }));
   }
 
+  function setLimitWeightToOwned(limitWeightToOwned: boolean) {
+    setData(saveEquipment({ ...data.equipment, limitWeightToOwned }));
+  }
+
   const value: DataContextValue = {
     exercises: data.exercises,
     workouts: data.workouts,
@@ -271,6 +292,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     removeOwnedKettlebell,
     toggleOwnedBand,
     toggleOwnedLoopBand,
+    setLimitWeightToOwned,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

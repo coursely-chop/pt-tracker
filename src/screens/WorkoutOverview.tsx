@@ -38,8 +38,10 @@ export default function WorkoutOverview() {
       </Link>
       <div className="movement-header">
         <h1 className="screen-title">{workout.name}</h1>
-        <Link to={`/workouts/${workout.id}/edit`} className="workout-edit-link">
-          Edit
+        <Link to={`/workouts/${workout.id}/edit`} className="icon-link" aria-label="Edit workout">
+          <svg viewBox="0 -960 960 960" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M200-200h56l345-345-56-56-345 345v56Zm572-403L602-771l56-56q23-23 56.5-23t56.5 23l56 56q23 23 24 55.5T829-660l-57 57Zm-58 59L290-120H120v-170l424-424 170 170Z" />
+          </svg>
         </Link>
       </div>
 
