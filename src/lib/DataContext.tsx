@@ -28,7 +28,7 @@ import type {
 } from "../types";
 
 export interface ExerciseDetailsUpdate {
-  warmupReps: number | null;
+  name: string;
   progressionRule: string | null;
   cues: string[];
   tags: string[];

@@ -253,10 +253,16 @@ export default function MovementDetail() {
             <SetLinesRows lines={warmupLines} />
           </button>
         ) : (
-          <div className="detail-section">
+          <button
+            type="button"
+            className="detail-section detail-set-lines-btn"
+            aria-label={`Edit ${exercise.name} warmup`}
+            disabled={noteEditorOpen}
+            onClick={() => openEditMode(exercise.id)}
+          >
             <div className="detail-section-label">Warmup</div>
             <div className="set-line-none">None required</div>
-          </div>
+          </button>
         )}
 
         <button

@@ -85,37 +85,29 @@ export default function WorkoutOverview() {
                         <Link to={`/workouts/${workout.id}/exercises/${exerciseId}`} className="exercise-name">
                           {exercise.name}
                         </Link>
-                        <div className="set-lines-row">
-                          {warmupLines ? (
-                            <button
-                              type="button"
-                              className="set-line-panel set-line-btn"
-                              aria-label={`Edit ${exercise.name} warmup`}
-                              onClick={() => openEditMode(exerciseId)}
-                            >
-                              <span className="set-line-label">
-                                <SetLinesLabel label="Warmup" sets={warmupLines.sets} />
-                              </span>
+                        <button
+                          type="button"
+                          className="set-lines-row set-lines-btn"
+                          aria-label={`Edit ${exercise.name} warmup and working sets`}
+                          onClick={() => openEditMode(exerciseId)}
+                        >
+                          <div className="set-line-panel">
+                            <span className="set-line-label">
+                              {warmupLines ? <SetLinesLabel label="Warmup" sets={warmupLines.sets} /> : "Warmup"}
+                            </span>
+                            {warmupLines ? (
                               <SetLinesRows lines={warmupLines} />
-                            </button>
-                          ) : (
-                            <div className="set-line-panel">
-                              <span className="set-line-label">Warmup</span>
+                            ) : (
                               <div className="set-line-none">None required</div>
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            className="set-line-panel set-line-btn"
-                            aria-label={`Edit ${exercise.name} working set reps and weight`}
-                            onClick={() => openEditMode(exerciseId)}
-                          >
+                            )}
+                          </div>
+                          <div className="set-line-panel">
                             <span className="set-line-label">
                               <SetLinesLabel label="Working" sets={workingLines.sets} />
                             </span>
                             <SetLinesRows lines={workingLines} />
-                          </button>
-                        </div>
+                          </div>
+                        </button>
                       </div>
                     );
                   })}

@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Stepper } from "./EditModeSheet";
 import { useData } from "../lib/DataContext";
 
 interface Snapshot {
-  hasWarmup: boolean;
-  warmupReps: number;
+  name: string;
   progressionRule: string;
   cues: string[];
   newCue: string;
@@ -18,8 +16,7 @@ export default function EditDetailsSheet() {
   const { editingDetailsExerciseId, closeEditDetails, getExercise, updateExerciseDetails } = useData();
   const exercise = editingDetailsExerciseId ? getExercise(editingDetailsExerciseId) : undefined;
 
-  const [hasWarmup, setHasWarmup] = useState(false);
-  const [warmupReps, setWarmupReps] = useState(1);
+  const [name, setName] = useState("");
   const [progressionRule, setProgressionRule] = useState("");
   const [cues, setCues] = useState<string[]>([]);
   const [newCue, setNewCue] = useState("");
@@ -34,8 +31,7 @@ export default function EditDetailsSheet() {
   useEffect(() => {
     if (!exercise) return;
     const snapshot: Snapshot = {
-      hasWarmup: exercise.warmupReps != null,
-      warmupReps: exercise.warmupReps ?? 1,
+      name: exercise.name,
       progressionRule: exercise.progressionRule ?? "",
       cues: exercise.cues,
       newCue: "",
@@ -44,8 +40,7 @@ export default function EditDetailsSheet() {
       instructionalLink: exercise.links.instructional ?? "",
       videoLink: exercise.links.video ?? "",
     };
-    setHasWarmup(snapshot.hasWarmup);
-    setWarmupReps(snapshot.warmupReps);
+    setName(snapshot.name);
     setProgressionRule(snapshot.progressionRule);
     setCues(snapshot.cues);
     setNewCue("");
@@ -63,8 +58,7 @@ export default function EditDetailsSheet() {
   // Includes newCue so a typed-but-not-added cue also counts as an unsaved
   // change — otherwise closing right after typing one would silently lose it.
   const currentSnapshot: Snapshot = {
-    hasWarmup,
-    warmupReps,
+    name,
     progressionRule,
     cues,
     newCue,
@@ -74,6 +68,7 @@ export default function EditDetailsSheet() {
     videoLink,
   };
   const isDirty = JSON.stringify(currentSnapshot) !== initialSnapshot;
+  const canSave = name.trim().length > 0;
 
   function addCue() {
     const trimmed = newCue.trim();
@@ -98,9 +93,9 @@ export default function EditDetailsSheet() {
   }
 
   function handleSave() {
-    if (!exercise) return;
+    if (!exercise || !canSave) return;
     updateExerciseDetails(exercise.id, {
-      warmupReps: hasWarmup ? warmupReps : null,
+      name: name.trim(),
       progressionRule: progressionRule.trim() || null,
       cues,
       tags,
@@ -144,20 +139,21 @@ export default function EditDetailsSheet() {
     <div className="sheet-backdrop" onClick={requestClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-header">
-          <h2>Edit {exercise.name} Details</h2>
+          <h2>Edit Exercise Details</h2>
           <button type="button" className="sheet-close" onClick={requestClose} aria-label="Close">
             ×
           </button>
         </div>
 
         <div className="detail-field">
-          <label className="toggle-row">
-            <input type="checkbox" checked={hasWarmup} onChange={(e) => setHasWarmup(e.target.checked)} />
-            This exercise has a warmup
-          </label>
-          {hasWarmup && (
-            <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={1} onChange={setWarmupReps} />
-          )}
+          <div className="slider-label">Name</div>
+          <input
+            type="text"
+            className="detail-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Standing Calf Raises"
+          />
         </div>
 
         <div className="detail-field">
@@ -258,7 +254,7 @@ export default function EditDetailsSheet() {
           />
         </div>
 
-        <button type="button" className="save-btn" onClick={handleSave}>
+        <button type="button" className="save-btn" onClick={handleSave} disabled={!canSave}>
           Save
         </button>
       </div>

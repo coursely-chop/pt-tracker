@@ -104,6 +104,22 @@ export function Stepper({ label, value, unit, step, min = 0, onChange, formatVal
   );
 }
 
+interface EditSnapshot {
+  asymmetric: boolean;
+  reps: number;
+  load: Load;
+  leftReps: number;
+  rightReps: number;
+  leftLoad: Load;
+  rightLoad: Load;
+  warmupEnabled: boolean;
+  warmupReps: number;
+  warmupLinked: boolean;
+  warmupOverrideLoad: Load;
+  warmupOverrideLeftLoad: Load;
+  warmupOverrideRightLoad: Load;
+}
+
 export default function EditModeSheet() {
   const { editingExerciseId, closeEditMode, getExercise, updateExerciseTarget, equipment } = useData();
   const exercise = editingExerciseId ? getExercise(editingExerciseId) : undefined;
@@ -127,45 +143,109 @@ export default function EditModeSheet() {
   const [warmupOverrideLeftLoad, setWarmupOverrideLeftLoad] = useState<Load>({ kind: "bodyweight" });
   const [warmupOverrideRightLoad, setWarmupOverrideRightLoad] = useState<Load>({ kind: "bodyweight" });
   const [warmupReps, setWarmupReps] = useState(1);
+  const [warmupEnabled, setWarmupEnabled] = useState(true);
+  const [initialSnapshot, setInitialSnapshot] = useState("");
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   // Re-initialize form state only when a (possibly different) exercise is opened,
-  // not on every subsequent data write elsewhere in the app.
+  // not on every subsequent data write elsewhere in the app. Values are computed
+  // into locals first (not read back from state, which wouldn't be updated yet
+  // within this same effect run) so the same values can seed both the form
+  // fields and the dirty-tracking snapshot below.
   useEffect(() => {
     if (!exercise) return;
     const { target, warmupLoad } = exercise;
     const startAsymmetric = target.sides != null;
-    setAsymmetric(startAsymmetric);
 
-    if (startAsymmetric && target.sides) {
-      setLeftReps(target.sides.left.reps);
-      setRightReps(target.sides.right.reps);
-      setLeftLoad(cloneLoad(target.sides.left.load));
-      setRightLoad(cloneLoad(target.sides.right.load));
-      setLeftTempo(target.sides.left.tempo);
-      setRightTempo(target.sides.right.tempo);
-    } else if (target.load) {
-      setLoad(cloneLoad(target.load));
-    }
-    setReps(target.reps ?? target.repRange.min);
+    const newLeftReps = target.sides ? target.sides.left.reps : leftReps;
+    const newRightReps = target.sides ? target.sides.right.reps : rightReps;
+    const newLeftLoad = target.sides ? cloneLoad(target.sides.left.load) : cloneLoad(leftLoad);
+    const newRightLoad = target.sides ? cloneLoad(target.sides.right.load) : cloneLoad(rightLoad);
+    const newLeftTempo = target.sides?.left.tempo;
+    const newRightTempo = target.sides?.right.tempo;
+    const newLoad = target.load ? cloneLoad(target.load) : cloneLoad(load);
+    const newReps = target.reps ?? target.repRange.min;
 
-    setWarmupReps(exercise.warmupReps ?? 1);
-    setWarmupLinked(warmupLoad == null);
+    const newWarmupEnabled = exercise.warmupReps != null;
+    const newWarmupReps =
+      exercise.warmupReps ??
+      (startAsymmetric && target.sides ? Math.min(target.sides.left.reps, target.sides.right.reps) : target.reps ?? target.repRange.min);
+    const newWarmupLinked = warmupLoad == null;
+
+    let newWarmupOverrideLeftLoad = warmupOverrideLeftLoad;
+    let newWarmupOverrideRightLoad = warmupOverrideRightLoad;
+    let newWarmupOverrideLoad = warmupOverrideLoad;
     if (startAsymmetric && target.sides) {
       const override = warmupLoad && "left" in warmupLoad ? warmupLoad : null;
-      setWarmupOverrideLeftLoad(
-        cloneLoad(override ? override.left : computeWarmupLoad(target.sides.left.load, equipment))
-      );
-      setWarmupOverrideRightLoad(
-        cloneLoad(override ? override.right : computeWarmupLoad(target.sides.right.load, equipment))
-      );
+      newWarmupOverrideLeftLoad = cloneLoad(override ? override.left : computeWarmupLoad(target.sides.left.load, equipment));
+      newWarmupOverrideRightLoad = cloneLoad(override ? override.right : computeWarmupLoad(target.sides.right.load, equipment));
     } else {
       const override = warmupLoad && !("left" in warmupLoad) ? warmupLoad : null;
-      setWarmupOverrideLoad(cloneLoad(override ?? computeWarmupLoad(target.load, equipment)));
+      newWarmupOverrideLoad = cloneLoad(override ?? computeWarmupLoad(target.load, equipment));
     }
+
+    setAsymmetric(startAsymmetric);
+    setLeftReps(newLeftReps);
+    setRightReps(newRightReps);
+    setLeftLoad(newLeftLoad);
+    setRightLoad(newRightLoad);
+    setLeftTempo(newLeftTempo);
+    setRightTempo(newRightTempo);
+    setLoad(newLoad);
+    setReps(newReps);
+    setWarmupEnabled(newWarmupEnabled);
+    setWarmupReps(newWarmupReps);
+    setWarmupLinked(newWarmupLinked);
+    setWarmupOverrideLeftLoad(newWarmupOverrideLeftLoad);
+    setWarmupOverrideRightLoad(newWarmupOverrideRightLoad);
+    setWarmupOverrideLoad(newWarmupOverrideLoad);
+
+    const snapshot: EditSnapshot = {
+      asymmetric: startAsymmetric,
+      reps: newReps,
+      load: newLoad,
+      leftReps: newLeftReps,
+      rightReps: newRightReps,
+      leftLoad: newLeftLoad,
+      rightLoad: newRightLoad,
+      warmupEnabled: newWarmupEnabled,
+      warmupReps: newWarmupReps,
+      warmupLinked: newWarmupLinked,
+      warmupOverrideLoad: newWarmupOverrideLoad,
+      warmupOverrideLeftLoad: newWarmupOverrideLeftLoad,
+      warmupOverrideRightLoad: newWarmupOverrideRightLoad,
+    };
+    setInitialSnapshot(JSON.stringify(snapshot));
+    setConfirmingDiscard(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingExerciseId]);
 
   if (!exercise) return null;
+
+  const currentSnapshot: EditSnapshot = {
+    asymmetric,
+    reps,
+    load,
+    leftReps,
+    rightReps,
+    leftLoad,
+    rightLoad,
+    warmupEnabled,
+    warmupReps,
+    warmupLinked,
+    warmupOverrideLoad,
+    warmupOverrideLeftLoad,
+    warmupOverrideRightLoad,
+  };
+  const isDirty = JSON.stringify(currentSnapshot) !== initialSnapshot;
+
+  function requestClose() {
+    if (isDirty) {
+      setConfirmingDiscard(true);
+    } else {
+      closeEditMode();
+    }
+  }
 
   function handleAsymmetricToggle(checked: boolean) {
     if (checked) {
@@ -206,80 +286,114 @@ export default function EditModeSheet() {
       entries.push({ date, load, reps, note: null });
     }
 
-    const newWarmupLoad: Exercise["warmupLoad"] = warmupLinked
+    const newWarmupLoad: Exercise["warmupLoad"] = !warmupEnabled
       ? null
-      : asymmetric
-        ? { left: warmupOverrideLeftLoad, right: warmupOverrideRightLoad }
-        : warmupOverrideLoad;
+      : warmupLinked
+        ? null
+        : asymmetric
+          ? { left: warmupOverrideLeftLoad, right: warmupOverrideRightLoad }
+          : warmupOverrideLoad;
 
-    // Only this sheet's own warmup section (shown when the exercise already
-    // has one) can change the rep count — an exercise with no warmup at all
-    // has nothing here to edit, so its warmupReps (null) passes through as-is.
-    const newWarmupReps = exercise.warmupReps != null ? warmupReps : exercise.warmupReps;
+    // This checkbox is this sheet's own way to turn warmup off (or, from an
+    // exercise with none, back on) — reps only means something when it's on.
+    const newWarmupReps = warmupEnabled ? warmupReps : null;
 
     updateExerciseTarget(exercise.id, newTarget, entries, newWarmupLoad, newWarmupReps);
     closeEditMode();
   }
 
   const canSplitSides = exercise.target.perSide;
-  const hasWarmup = exercise.warmupReps != null;
+
+  if (confirmingDiscard) {
+    return (
+      <div className="sheet-backdrop" onClick={requestClose}>
+        <div className="sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="discard-confirm">
+            <div className="discard-confirm-text">Save Unsaved Changes?</div>
+            <div className="discard-confirm-actions">
+              <button type="button" className="confirm-discard-btn" onClick={closeEditMode}>
+                Discard
+              </button>
+              <button type="button" className="confirm-save-btn" onClick={handleSave}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="sheet-backdrop" onClick={closeEditMode}>
+    <div className="sheet-backdrop" onClick={requestClose}>
       {/* Keyed by exercise id so every field (native range inputs especially) mounts fresh
           per exercise, instead of React patching a previous exercise's DOM nodes in place. */}
       <div key={editingExerciseId} className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-header">
           <h2>{exercise.name}</h2>
-          <button type="button" className="sheet-close" onClick={closeEditMode} aria-label="Close">
+          <button type="button" className="sheet-close" onClick={requestClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        {hasWarmup && (
-          <div className="edit-mode-section">
-            <div className="edit-mode-section-header">
-              <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
-              <label className="toggle-row toggle-row-inline">
-                <input
-                  type="checkbox"
-                  checked={warmupLinked}
-                  onChange={(e) => setWarmupLinked(e.target.checked)}
-                />
-                Match Working (50-75%)
-              </label>
-            </div>
-
-            {asymmetric ? (
-              <div className="sides-editor">
-                <div className="side-editor">
-                  <div className="side-editor-label">Left</div>
-                  {warmupLinked ? (
-                    <div className="load-editor-preview">
-                      {formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}
-                    </div>
-                  ) : (
-                    <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
-                  )}
-                </div>
-                <div className="side-editor">
-                  <div className="side-editor-label">Right</div>
-                  {warmupLinked ? (
-                    <div className="load-editor-preview">
-                      {formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}
-                    </div>
-                  ) : (
-                    <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
-                  )}
-                </div>
-              </div>
-            ) : warmupLinked ? (
-              <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
-            ) : (
-              <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
-            )}
+        <div className="edit-mode-section">
+          <div className="warmup-enabled-row">
+            <div className="slider-label">Warmup</div>
+            <input
+              type="checkbox"
+              checked={warmupEnabled}
+              onChange={(e) => setWarmupEnabled(e.target.checked)}
+              aria-label="Exercise has a warmup"
+            />
           </div>
-        )}
+
+          {!warmupEnabled ? (
+            <div className="set-line-none">None required</div>
+          ) : (
+            <>
+              <div className="edit-mode-section-header">
+                <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
+                <label className="toggle-row toggle-row-inline">
+                  <input
+                    type="checkbox"
+                    checked={warmupLinked}
+                    onChange={(e) => setWarmupLinked(e.target.checked)}
+                  />
+                  Match Working (50-75%)
+                </label>
+              </div>
+
+              {asymmetric ? (
+                <div className="sides-editor">
+                  <div className="side-editor">
+                    <div className="side-editor-label">Left</div>
+                    {warmupLinked ? (
+                      <div className="load-editor-preview">
+                        {formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}
+                      </div>
+                    ) : (
+                      <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
+                    )}
+                  </div>
+                  <div className="side-editor">
+                    <div className="side-editor-label">Right</div>
+                    {warmupLinked ? (
+                      <div className="load-editor-preview">
+                        {formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}
+                      </div>
+                    ) : (
+                      <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
+                    )}
+                  </div>
+                </div>
+              ) : warmupLinked ? (
+                <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
+              ) : (
+                <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
+              )}
+            </>
+          )}
+        </div>
 
         <div className="edit-mode-section">
           <div className="slider-label">Working</div>
