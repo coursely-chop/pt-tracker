@@ -16,7 +16,10 @@ function formatLoadPreview(load: Load): string {
   return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
 }
 
-export const WEIGHT_STEP = 2.5;
+/** 1 lb per tap — fine enough to reach any real dumbbell in a home set,
+ * including odd-numbered ones like a 3 lb rehab weight that a coarser
+ * 2.5 lb step could never land on exactly. */
+export const WEIGHT_STEP = 1;
 export const REPS_STEP = 1;
 
 function cloneLoad(load: Load): Load {
@@ -43,9 +46,9 @@ interface StepperProps {
   large?: boolean;
 }
 
-/** Gains here are incremental by design (2.5/5/7.5/10 lb jumps, 1 rep at a time) —
- * every tap moves exactly one step, so there's no drag-to-an-arbitrary-position
- * control to get wrong. The value stays centered; − and + sit at each end. */
+/** Gains here are incremental by design (1 lb or 1 rep per tap) — every tap
+ * moves exactly one step, so there's no drag-to-an-arbitrary-position control
+ * to get wrong. The value stays centered; − and + sit at each end. */
 export function Stepper({ label, value, unit, step, min = 0, onChange, formatValue, large }: StepperProps) {
   const decrement = () => onChange(Math.max(min, roundToStep(value - step, step)));
   const increment = () => onChange(roundToStep(value + step, step));

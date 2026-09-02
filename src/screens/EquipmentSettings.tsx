@@ -40,7 +40,7 @@ function WeightList({ label, singularLabel, hint, emptyText, weights, onAdd, onR
     <div className="detail-section">
       <div className="detail-section-label">{label}</div>
       <div className="detail-hint">{hint}</div>
-      {weights.length === 0 && !adding && <div className="empty-state">{emptyText}</div>}
+      {weights.length === 0 && !adding && <div className="hint-box equipment-empty">{emptyText}</div>}
       {weights.map((lbs) => (
         <div key={lbs} className="cue-row">
           <div className="cue-text">{lbs} lbs</div>
@@ -99,6 +99,8 @@ export default function EquipmentSettings() {
           <path d="m536-84-56-56 142-142-340-340-142 142-56-56 56-58-56-56 84-84-56-58 56-56 58 56 84-84 56 56 58-56 56 56-142 142 340 340 142-142 56 56-56 58 56 56-84 84 56 58-56 56-58-56-84 84-56-56-58 56Z" />
         </svg>
       </h1>
+
+      <p className="hint-box screen-intro">Add your home equipment to enable warmup suggestion for home workouts.</p>
 
       <WeightList
         label="Dumbbells"

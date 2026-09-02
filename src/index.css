@@ -918,6 +918,23 @@ body {
   margin-top: 6px;
 }
 
+.hint-box {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.35;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.screen-intro {
+  margin: 0 0 22px;
+}
+
+.equipment-empty {
+  margin: 8px 0 12px;
+}
+
 .cue-row {
   display: flex;
   align-items: center;
