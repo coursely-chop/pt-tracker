@@ -169,3 +169,30 @@ export function saveEquipment(equipment: Equipment): SeedData {
   saveData(next);
   return next;
 }
+
+/** Current data as a pretty-printed JSON string, for a manual backup file —
+ * this is the only durable protection against localStorage loss, since the
+ * app has no backend. Goes through loadData() first so a backup taken before
+ * a migration lands still exports today's shape, not whatever was on disk. */
+export function exportDataAsJson(): string {
+  return JSON.stringify(loadData(), null, 2);
+}
+
+/** Restores a previously exported backup, replacing everything currently in
+ * storage. Only checks the top-level shape — a corrupt/unrelated file should
+ * fail loudly here rather than silently produce a broken app afterward. */
+export function restoreDataFromJson(json: string): void {
+  const parsed = JSON.parse(json);
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !Array.isArray(parsed.exercises) ||
+    !Array.isArray(parsed.workouts) ||
+    !Array.isArray(parsed.completions) ||
+    !Array.isArray(parsed.notes) ||
+    typeof parsed.equipment !== "object"
+  ) {
+    throw new Error("That doesn't look like a PT Tracker backup file.");
+  }
+  saveData(parsed as SeedData);
+}

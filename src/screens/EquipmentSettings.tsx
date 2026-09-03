@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { Stepper, buildWeightSequence } from "../components/EditModeSheet";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
-import { capitalize } from "../lib/format";
+import { capitalize, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
+import { exportDataAsJson, restoreDataFromJson } from "../lib/storage";
 
 interface WeightListProps {
   label: string;
@@ -67,6 +68,75 @@ function WeightList({ label, singularLabel, hint, emptyText, weights, onAdd, onR
           + Add {singularLabel}
         </button>
       )}
+    </div>
+  );
+}
+
+/** Manual backup/restore — the only protection against data loss for a
+ * localStorage-only app with no backend. Restoring reloads the page rather
+ * than threading the new data through every context setter, since it's a
+ * rare, all-or-nothing action anyway. */
+function BackupRestore() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+
+  function handleExport() {
+    const json = exportDataAsJson();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pt-tracker-backup-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleFileSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        restoreDataFromJson(reader.result as string);
+        setRestored(true);
+        window.location.reload();
+      } catch {
+        setError("That doesn't look like a PT Tracker backup file.");
+      }
+    };
+    reader.onerror = () => setError("Couldn't read that file.");
+    reader.readAsText(file);
+  }
+
+  return (
+    <div className="detail-section">
+      <div className="detail-section-label">Backup & Restore</div>
+      <div className="detail-hint">
+        This app only saves data on this device. Download a backup occasionally so a lost or reset phone doesn't
+        mean lost workout history.
+      </div>
+      <div className="equipment-add-actions">
+        <button type="button" className="equipment-add-cancel" onClick={handleExport}>
+          Download Backup
+        </button>
+        <button type="button" className="equipment-add-confirm" onClick={() => fileInputRef.current?.click()}>
+          Restore from Backup
+        </button>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        onChange={handleFileSelected}
+        style={{ display: "none" }}
+      />
+      {error && <p className="hint-box equipment-empty">{error}</p>}
+      {restored && <p className="hint-box equipment-empty">Restored — reloading...</p>}
     </div>
   );
 }
@@ -178,6 +248,8 @@ export default function EquipmentSettings() {
           })}
         </div>
       </div>
+
+      <BackupRestore />
     </div>
   );
 }

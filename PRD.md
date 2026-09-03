@@ -145,6 +145,8 @@ A metadata-only editor for an exercise, reached via an "Edit Details" link on Mo
 ### 11. Equipment Settings
 
 A dedicated screen (not a sheet — there's no single exercise/workout it's scoped to, so it's reached from the global Home Workout List rather than launched over one), covered in full in [Home equipment](#home-equipment) above. Editing here writes immediately (no explicit Save button) — the same instant-persist pattern as toggling a note's pin, since there's no multi-field form to accidentally half-fill and lose.
+
+**Backup & Restore**, at the bottom of this screen, is the only protection against data loss for a localStorage-only app with no backend: "Download Backup" exports everything (exercises, workouts, completions, notes, equipment) as a timestamped JSON file; "Restore from Backup" reads a previously exported file back in, replacing everything currently in storage, then reloads the page. Restoring is all-or-nothing by design — there's no merge — since this is meant for disaster recovery (lost/reset phone, cleared site data), not routine use.
 ## Logging philosophy
 
 Two separate, intentionally lightweight logs — no per-set/per-session logging:
