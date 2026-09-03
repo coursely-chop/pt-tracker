@@ -46,17 +46,15 @@ body {
    stacking context. */
 .home-page-bg {
   position: fixed;
-  top: 0;
+  /* iOS Safari's address bar/toolbar collapsing and expanding changes the
+     visual viewport in ways that vh/dvh don't reliably account for (still
+     left a gap at top and bottom even with dvh). Since this is a blurred
+     photo, overscanning well past every edge is invisible and sidesteps
+     needing the viewport math to be exact. */
+  top: -12vh;
+  bottom: -12vh;
   left: 0;
   right: 0;
-  bottom: 0;
-  /* iOS Safari resizes the visual viewport as its address bar/toolbar
-     collapse and expand; a fixed element sized only via inset/bottom can
-     end up a bit short of one edge depending on toolbar state. Pinning an
-     explicit height to the dynamic viewport unit (with vh as a fallback
-     for browsers that don't support dvh) keeps it flush regardless. */
-  height: 100vh;
-  height: 100dvh;
   z-index: -1;
   background-size: cover;
   background-position: center 35%;
