@@ -22,7 +22,9 @@ export default function HomeWorkoutList() {
 
   return (
     <div className="screen">
-      <div className="home-page-bg" style={{ backgroundImage: `url(${heroImage})` }} aria-hidden="true" />
+      <div className="home-page-bg-frame" aria-hidden="true">
+        <div className="home-page-bg" style={{ backgroundImage: `url(${heroImage})` }} />
+      </div>
       <div className="home-hero">
         <Link to="/equipment" className="icon-link home-hero-equipment" aria-label="Equipment">
           <svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" aria-hidden="true">

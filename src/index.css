@@ -43,19 +43,24 @@ body {
    behind the greeting and the workout list alike, including any empty
    space below a short list. z-index:-1 is what keeps it behind ordinary
    in-flow content without needing every other element to opt into its own
-   stacking context. */
-.home-page-bg {
+   stacking context.
+
+   Split into two layers deliberately: iOS PWAs (Home Screen standalone
+   mode) were still clipping the bottom edge even with generous negative
+   insets directly on a filtered fixed element — a filter plus negative
+   offsets on the same fixed-positioned box appears to confuse WebKit's
+   compositing bounds for that box. Keeping the fixed anchor plain
+   (inset:0, no filter) and putting the filter + overscan on an absolutely
+   positioned child inside it sidesteps that. */
+.home-page-bg-frame {
   position: fixed;
-  /* iOS Safari's address bar/toolbar collapsing and expanding changes the
-     visual viewport in ways that vh/dvh don't reliably account for (still
-     left a gap at top and bottom even with dvh). Since this is a blurred
-     photo, overscanning well past every edge is invisible and sidesteps
-     needing the viewport math to be exact. */
-  top: -12vh;
-  bottom: -12vh;
-  left: 0;
-  right: 0;
+  inset: 0;
   z-index: -1;
+}
+
+.home-page-bg {
+  position: absolute;
+  inset: -15%;
   background-size: cover;
   background-position: center 35%;
   filter: blur(7px) brightness(0.5) saturate(0.9);
