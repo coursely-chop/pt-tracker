@@ -64,12 +64,16 @@ body {
 .home-hero {
   position: relative;
   margin: -20px -16px 24px;
-  padding: 44px 20px 22px;
+  /* env(safe-area-inset-top) is 0 in a normal Safari tab (the browser's own
+     chrome already reserves that space) but becomes the status bar/notch
+     height when this runs as an installed Home Screen app, where the page
+     draws fully edge-to-edge — this keeps the greeting from landing under it. */
+  padding: calc(44px + env(safe-area-inset-top)) 20px 22px;
 }
 
 .home-hero-equipment {
   position: absolute;
-  top: 16px;
+  top: calc(16px + env(safe-area-inset-top));
   right: 16px;
   background: oklch(0.19 0.02 245 / 0.55);
   border-color: oklch(1 0 0 / 0.3);
