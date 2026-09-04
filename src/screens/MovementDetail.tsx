@@ -245,7 +245,7 @@ export default function MovementDetail() {
             className="detail-section detail-set-lines-btn"
             aria-label={`Edit ${exercise.name} warmup`}
             disabled={noteEditorOpen}
-            onClick={() => openEditMode(exercise.id)}
+            onClick={() => openEditMode(exercise.id, workout.type === "gym")}
           >
             <div className="detail-section-label">
               <SetLinesLabel label="Warmup" sets={warmupLines.sets} />
@@ -258,7 +258,7 @@ export default function MovementDetail() {
             className="detail-section detail-set-lines-btn"
             aria-label={`Edit ${exercise.name} warmup`}
             disabled={noteEditorOpen}
-            onClick={() => openEditMode(exercise.id)}
+            onClick={() => openEditMode(exercise.id, workout.type === "gym")}
           >
             <div className="detail-section-label">Warmup</div>
             <div className="set-line-none">None required</div>
@@ -270,7 +270,7 @@ export default function MovementDetail() {
           className="detail-section detail-set-lines-btn"
           aria-label={`Edit ${exercise.name} working set reps and weight`}
           disabled={noteEditorOpen}
-          onClick={() => openEditMode(exercise.id)}
+          onClick={() => openEditMode(exercise.id, workout.type === "gym")}
         >
           <div className="detail-section-label">
             <SetLinesLabel label="Working" sets={protocol.workingSets} />

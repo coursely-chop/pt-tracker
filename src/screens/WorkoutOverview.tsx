@@ -34,7 +34,7 @@ export default function WorkoutOverview() {
   return (
     <div className="screen">
       <Link to="/" className="back-link">
-        ← Home Workouts
+        ← {workout.type === "gym" ? "Gym Workouts" : "Home Workouts"}
       </Link>
       <div className="movement-header">
         <h1 className="screen-title">{workout.name}</h1>
@@ -89,7 +89,7 @@ export default function WorkoutOverview() {
                           type="button"
                           className="set-lines-row set-lines-btn"
                           aria-label={`Edit ${exercise.name} warmup and working sets`}
-                          onClick={() => openEditMode(exerciseId)}
+                          onClick={() => openEditMode(exerciseId, workout.type === "gym")}
                         >
                           <div className="set-line-panel">
                             <span className="set-line-label">

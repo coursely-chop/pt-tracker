@@ -76,15 +76,6 @@ body {
   padding: calc(44px + env(safe-area-inset-top)) 20px 22px;
 }
 
-.home-hero-equipment {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 16px;
-  background: oklch(0.19 0.02 245 / 0.55);
-  border-color: oklch(1 0 0 / 0.3);
-  color: white;
-}
-
 .home-hero-greeting {
   font-family: var(--font-display);
   font-size: 26px;
@@ -116,22 +107,29 @@ body {
   color: var(--bg);
 }
 
-.home-hero-cta-disabled {
+.home-hero-cta-secondary {
   background: oklch(1 0 0 / 0.12);
-  color: oklch(1 0 0 / 0.75);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  cursor: not-allowed;
+  color: oklch(1 0 0 / 0.85);
 }
 
-.home-hero-badge {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: oklch(1 0 0 / 0.55);
+.home-hero-cta-secondary:hover {
+  background: oklch(1 0 0 / 0.18);
+}
+
+/* Fixed bottom-left, mirroring the FAB's fixed bottom-right — a persistent
+   utility control rather than something scoped to the hero image, since it
+   needs to stay reachable once the list below has scrolled the hero out of
+   view. */
+.settings-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: 0 4px 14px oklch(0.08 0.02 245 / 0.35);
 }
 
 .screen-title {
@@ -717,6 +715,11 @@ body {
 
 .toggle-row-inline {
   margin-bottom: 0;
+}
+
+.load-editor-restrict {
+  margin-top: 8px;
+  font-size: 13px;
 }
 
 .edit-mode-section {

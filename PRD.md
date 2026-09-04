@@ -8,25 +8,29 @@ Replace the Apple Note my trainer shares with a local-first app that (a) reminds
 
 ## MVP Scope
 
-- **In scope:** Home Workout tracking only.
-- **Out of scope (future):** PT Workouts, Gym Workouts. The home screen has one primary CTA ("Home Workout") on purpose — room for PT/Gym gets added later without redesigning this flow.
+- **In scope:** Home Workout and Gym Workout tracking, as two tagged variants of the same structure (§2, §12).
+- **Out of scope (future):** PT Workouts. Barbell/plate-loaded and machine-stack weights aren't modeled — Gym Workouts share the exact same exercise catalog and `Load` kinds as Home Workouts (see §12); that's a real gap whenever gym-only equipment types are actually wanted.
 - **Deliberately not built:** a per-session, per-set workout logger. See [Logging philosophy](#logging-philosophy).
 
 ## Screens & Flows
 
 ### 1. Home / Welcome — not built as a separate screen
 
-Originally planned as its own landing screen ahead of the workout list — a "Welcome back, Ben" header, a **this-week stat** (count of workouts completed in the last 7 days, from the completion log — see [§8](#8-log-workout-completion)), and a **featured exercise sparkline** (a weight-over-time trend for one exercise, swipeable to cycle through others; which exercise goes first was an open question). None of this got built: there's no stored user name to personalize a greeting with, and the stat/sparkline would need real design work this app doesn't have yet. What exists instead is the lighter hero described in §2 below, folded directly into the workout list rather than a separate screen. Left here as a record of the original idea in case it comes back — see also **Open items**.
+Originally planned as its own landing screen ahead of the workout list — a "Welcome back, Ben" header, a **this-week stat** (count of workouts completed in the last 7 days, from the completion log — see [§8](#8-log-workout-completion)), and a **featured exercise sparkline** (a weight-over-time trend for one exercise, swipeable to cycle through others; which exercise goes first was an open question). None of this got built: the stat/sparkline would need real design work this app doesn't have yet. What exists instead is the lighter hero described in §2 below, folded directly into the workout list rather than a separate screen. Left here as a record of the original idea in case it comes back — see also **Open items**.
 
-### 2. Home Workouts
+(The name in the greeting is no longer hardcoded — see `profile.name`, editable on Settings' General tab, §11.)
+
+### 2. Home Workouts / Gym Workouts
 
 The root screen (`/`) — a hero banner directly above the workout list, both on one page rather than a separate landing screen (see §1):
 
-- **Hero:** a time-of-day greeting ("Good morning" / "Good afternoon" / "Good evening" — no stored name to personalize further, see §1), over a blurred, darkened background photo for legibility. Below it, two CTAs: **Home Workout** (scrolls the page down to the list — the list is already on this same screen, so this is a same-page jump, not a navigation) and **Gym Workout**, greyed out with a "Coming soon" badge — home and gym workouts are visually distinguished here even though only home workouts are modeled at all today (see **Open items**). An equipment icon-button floats over the top-right corner of the photo → Equipment Settings (§11).
-- **List:** saved home workouts, under a plain "Home Workouts" label. Each row shows:
+- **Hero:** a time-of-day greeting ("Good morning" / "Good afternoon" / "Good evening"), `profile.name`, over a blurred, darkened background photo for legibility. Below it, two tab-style CTAs — **Home Workout** and **Gym Workout** — that switch which list renders below (and scroll to it, since the list is on this same page). Whichever is active renders filled/primary; the other renders as a plain secondary button. Both are real tabs now, not a "coming soon" placeholder — see §12 for what actually differs between the two.
+- **List:** the active tab's saved workouts. Each row shows:
   - Name (renaming happens via Edit Workout — §9 — not inline on this list)
   - Last completed date (derived from completion log; "never" if none yet)
-- FAB (+) → Create New Home Workout (see [§9](#9-create-new-home-workout)).
+  - An empty tab (e.g. no Gym Workouts created yet) shows a plain "No {home/gym} workouts yet — tap + to create one" hint rather than a blank list.
+- FAB (+) → Create New Workout, tagged with whichever tab is currently active (see [§9](#9-create-new-home-workout), [§12](#12-gym-workouts)).
+- A settings icon (gear) is fixed at the bottom-left of the screen (mirroring the FAB's fixed bottom-right) → Settings (§11). Previously an equipment-only icon floated over the top-right corner of the hero photo; moved and renamed once Equipment became one section of a broader Settings screen rather than its own destination.
 - Tap a workout → Workout Overview.
 
 ### 3. Workout Overview
@@ -142,11 +146,24 @@ A metadata-only editor for an exercise, reached via an "Edit Details" link on Mo
 - **Unsaved-changes guard:** closing (X or backdrop tap) with any pending edit — including text typed into the "add a cue" field but never added — shows a custom in-sheet **"Save Unsaved Changes?"** prompt (a red-outline **Discard** and a blue **Save**, no separate Cancel — you've already decided to leave, the prompt just asks how) instead of silently losing it. Styled to match the sheet rather than a native browser `confirm()`, consistent with the rest of this app being fully custom. Saving directly (not via this prompt) always bypasses it, since saving isn't a discard.
 - **Does not** touch warmup at all (existence, rep count, or load — that's exclusively Edit Mode's, §5; an earlier version duplicated "has a warmup" as a checkbox here too, cut once Edit Mode covered the same ground more directly, from the screen where it actually matters), target weight/reps, or the progression log. Keeping these edit paths separate avoids accidentally generating a progression entry just because someone added a form cue. Verified: editing details leaves `progression[]` and `target` byte-for-byte unchanged.
 
-### 11. Equipment Settings
+### 11. Settings
 
-A dedicated screen (not a sheet — there's no single exercise/workout it's scoped to, so it's reached from the global Home Workout List rather than launched over one), covered in full in [Home equipment](#home-equipment) above. Editing here writes immediately (no explicit Save button) — the same instant-persist pattern as toggling a note's pin, since there's no multi-field form to accidentally half-fill and lose.
+A dedicated screen (not a sheet — there's no single exercise/workout it's scoped to, so it's reached from the global Home Workout List rather than launched over one), reached via the gear icon (§2). Two tabs, a plain segmented control at the top:
 
-**Backup & Restore**, at the bottom of this screen, is the only protection against data loss for a localStorage-only app with no backend: "Download Backup" exports everything (exercises, workouts, completions, notes, equipment) as a timestamped JSON file; "Restore from Backup" reads a previously exported file back in, replacing everything currently in storage, then reloads the page. Restoring is all-or-nothing by design — there's no merge — since this is meant for disaster recovery (lost/reset phone, cleared site data), not routine use.
+- **Equipment** (selected by default — the only section with real content today, so defaulting to "General" would land on an empty-looking screen). Covered in full in [Home equipment](#home-equipment) above. Editing here writes immediately (no explicit Save button) — the same instant-persist pattern as toggling a note's pin, since there's no multi-field form to accidentally half-fill and lose.
+
+  **Backup & Restore**, at the bottom of the Equipment tab, is the only protection against data loss for a localStorage-only app with no backend: "Download Backup" exports everything (exercises, workouts, completions, notes, equipment, profile) as a timestamped JSON file; "Restore from Backup" reads a previously exported file back in, replacing everything currently in storage, then reloads the page. Restoring is all-or-nothing by design — there's no merge — since this is meant for disaster recovery (lost/reset phone, cleared site data), not routine use.
+
+- **General** — currently just "Your Name" (`profile.name`), a plain text field feeding the Home Screen greeting (§2). Instant-persist, same as Equipment. Room for other non-equipment preferences later, not yet identified.
+
+### 12. Gym Workouts
+
+Structurally identical to Home Workouts — same Workout Builder, same exercise catalog, same supersets/protocol, same Workout Overview and Movement Detail — distinguished only by `workouts[].type` (`"home" | "gym"`, see `DATA_MODEL.md`). The one real behavioral difference: a gym has a full rack, so the free-weight stepper's "restrict to home equipment" logic (§5) never applies to a Gym Workout's exercises, regardless of the global Equipment setting — the "Restrict to home equipment" checkbox doesn't even render there, since it wouldn't do anything.
+
+Created from the Home Screen's Gym Workout tab (§2) — the FAB there links to the same Workout Builder with `?type=gym`, which fixes the new workout's type for its lifetime; editing an existing workout inherits its own type instead of reading the query param. There's no UI to convert a workout from one type to the other after creation.
+
+Exercises themselves are **not** split by type — a "Goblet Squat" is the same exercise whether it's in a Home or Gym workout, so anything you create while adding to a Gym Workout still lands in the one shared exercise library and shows up when browsing from a Home Workout too. This was a deliberate scope call: barbell/plate-loaded and machine-stack weights aren't modeled at all (`Load` is still just freeWeight/band/loopBand/bodyweight — see `DATA_MODEL.md`), so a real gym-only exercise catalog is future scope, not something this pass added.
+
 ## Logging philosophy
 
 Two separate, intentionally lightweight logs — no per-set/per-session logging:
@@ -179,12 +196,15 @@ The trainer's "50-75% of working weight" warmup guidance assumes a weight rack; 
 - **"Limit the weight stepper to equipment I own"** — a checkbox, on by default, just below the intro text. Governs the *working*-target free-weight stepper in Edit Mode and New Exercise (§10): on, it only walks your owned dumbbells/kettlebells; off, it walks the same fixed sequence as adding equipment here. Doesn't touch this screen's own add-weight stepper (see above) or the working band picker, which still shows all five tube-band colors regardless of ownership either way.
 - **Tube Bands**: the five colors (yellow=10, green=20, blue=30, black=40, red=50 lbs — a fixed, physical property of the bands themselves, not editable) shown as toggleable swatches, marking which you actually own. This also doesn't restrict the working-target band picker in Edit Mode, which still shows and allows all five regardless of ownership — equipment ownership is scoped to warmup suggestions only, an explicit and deliberate MVP simplification, not an oversight.
 - **Loop Bands**: a second, separate set of toggleable swatches for the three closed-loop band strengths (light/moderate/strong, e.g. Lateral Band Walks) — a physically different kind of band from Tube Bands above, kept as its own section (and its own `ownedLoopBands` list) even though "blue" and "black" happen to name a color in both catalogs. Same ownership-only scoping as Tube Bands: doesn't restrict the working-target picker, only feeds the computed warmup suggestion.
-- **The inline accelerator**: dialing in a working free weight that isn't already owned (checked against both lists) surfaces a small "+ Add {N} lbs to your equipment" prompt right there in Edit Mode — the moment you'd actually know about a new weight is when you're setting it as a target, not a separate trip to a settings screen later. It defaults to adding as a dumbbell (this app's exercises are overwhelmingly dumbbell-based); reclassify as a kettlebell on the Equipment screen itself if that's what it actually was. No equivalent prompt for either band catalog, since band ownership is a yes/no toggle on a fixed catalog, not an open-ended value like weight.
+- **The inline accelerator**: dialing in a working free weight that isn't already owned (checked against both lists, including doubled pairs — see below) surfaces a small "+ Add {N} lbs to your equipment" prompt right there in Edit Mode — the moment you'd actually know about a new weight is when you're setting it as a target, not a separate trip to a settings screen later. It defaults to adding as a dumbbell (this app's exercises are overwhelmingly dumbbell-based); reclassify as a kettlebell on the Equipment screen itself if that's what it actually was. No equivalent prompt for either band catalog, since band ownership is a yes/no toggle on a fixed catalog, not an open-ended value like weight.
+- **Doubled pairs count as reachable**: a dumbbell entry is an owned *pair*, so owning a 15 also reaches 30 (held one in each hand, or both together for a heavier bilateral hold) — the restricted-mode sequence includes both the raw owned values and each doubled, not just the raw values. Fixed a real gap: before this, owning a 15 lb pair only ever offered 15 in restricted mode, even though 30 was physically achievable.
+- **Inline restrict toggle**: "Restrict to home equipment" appears directly in the free-weight editor (Edit Mode and New Exercise) as a plain checkbox, not just on the Equipment screen — it's the exact same global `equipment.limitWeightToOwned` flag, just exposed where you're actually looking at the stepper, so toggling it doesn't require a separate trip to Settings. Hidden entirely when editing from a Gym Workout (§12), where it never applies.
 
 ## Open items
 
 - Which exercise is "featured" first in the welcome-screen sparkline carousel.
-- PT Workouts, Gym Workouts — future scope, unmodeled.
+- PT Workouts — future scope, unmodeled.
+- Gym-only exercises (barbell/plate-loaded, machine-stack) — Gym Workouts (§12) currently share the exact same exercise catalog and `Load` kinds as Home Workouts; real gym-specific equipment types are unmodeled.
 - Visual design (this doc is behavior/structure, not UI mockups).
 
 ## Future ideas (explicitly post-MVP)

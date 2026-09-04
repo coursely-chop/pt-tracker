@@ -325,6 +325,7 @@
     {
       "id": "home-strength-workout-1",
       "name": "Home Strength Workout #1",
+      "type": "home",
       "structure": {
         "dynamicStretching": "",
         "protocol": {
@@ -358,6 +359,7 @@
     {
       "id": "home-strength-workout-2",
       "name": "Home Strength Workout #2",
+      "type": "home",
       "structure": {
         "dynamicStretching": "Refer to shared 'Dynamic Stretching' note (not duplicated here)",
         "protocol": {
@@ -451,5 +453,8 @@
       "strong"
     ],
     "limitWeightToOwned": true
+  },
+  "profile": {
+    "name": "Ben"
   }
 }

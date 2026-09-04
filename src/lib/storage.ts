@@ -1,6 +1,12 @@
 import seedData from "../data/seed-data.json";
 import { BAND_COLORS, DEFAULT_OWNED_DUMBBELLS, DEFAULT_OWNED_KETTLEBELLS, DEFAULT_OWNED_LOOP_BANDS } from "./equipment";
-import type { Equipment, Exercise, Note, SeedData, Workout, WorkoutCompletion } from "../types";
+import type { Equipment, Exercise, Note, Profile, SeedData, Workout, WorkoutCompletion } from "../types";
+
+/** Workout shape before home/gym existed — every workout was implicitly a
+ * home workout. */
+interface LegacyWorkout {
+  type?: Workout["type"];
+}
 
 /** Equipment shape before dumbbells/kettlebells were tracked separately — a
  * single undifferentiated free-weight list, implicitly assumed to be dumbbell
@@ -58,7 +64,7 @@ export function loadData(): SeedData {
           warmupLoad: legacy.warmupLoad ?? null,
         };
       }),
-      workouts: parsed.workouts ?? [],
+      workouts: (parsed.workouts ?? []).map((w) => ({ ...w, type: (w as Workout & LegacyWorkout).type ?? "home" })),
       completions: parsed.completions ?? [],
       notes: parsed.notes ?? [],
       // Predates the Equipment screen (or predates the dumbbell/kettlebell split
@@ -75,6 +81,9 @@ export function loadData(): SeedData {
           limitWeightToOwned: legacy?.limitWeightToOwned ?? true,
         };
       })(),
+      // Predates the greeting name being editable — "Ben" matches what was
+      // previously hardcoded in the Home Workouts header.
+      profile: parsed.profile ?? { name: "Ben" },
     };
   }
 
@@ -166,6 +175,14 @@ export function deleteNote(noteId: string): SeedData {
 export function saveEquipment(equipment: Equipment): SeedData {
   const data = loadData();
   const next: SeedData = { ...data, equipment };
+  saveData(next);
+  return next;
+}
+
+/** Replaces the profile (currently just the greeting name) and persists the whole data set. */
+export function saveProfile(profile: Profile): SeedData {
+  const data = loadData();
+  const next: SeedData = { ...data, profile };
   saveData(next);
   return next;
 }

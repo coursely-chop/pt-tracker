@@ -1,5 +1,4 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { Link } from "react-router-dom";
 import { Stepper, buildWeightSequence } from "../components/EditModeSheet";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
 import { capitalize, todayISO } from "../lib/format";
@@ -146,8 +145,11 @@ function BackupRestore() {
  * set as a working target, which stays free-form on purpose. Rarely edited:
  * once when this screen first exists, then only when equipment changes —
  * see the "+ Add ... to your equipment" prompt in Edit Mode for the more
- * common way a new dumbbell weight actually gets added here. */
-export default function EquipmentSettings() {
+ * common way a new dumbbell weight actually gets added here.
+ *
+ * No screen chrome of its own (back link, title) — it's embedded as a
+ * section of the Settings screen rather than reached as its own route. */
+export default function EquipmentSection() {
   const {
     equipment,
     addOwnedDumbbell,
@@ -160,17 +162,7 @@ export default function EquipmentSettings() {
   } = useData();
 
   return (
-    <div className="screen">
-      <Link to="/" className="back-link">
-        ← Home Workouts
-      </Link>
-      <h1 className="screen-title screen-title-with-icon">
-        Equipment
-        <svg viewBox="0 -960 960 960" width="24" height="24" fill="#fff" aria-hidden="true">
-          <path d="m536-84-56-56 142-142-340-340-142 142-56-56 56-58-56-56 84-84-56-58 56-56 58 56 84-84 56 56 58-56 56 56-142 142 340 340 142-142 56 56-56 58 56 56-84 84 56 58-56 56-58-56-84 84-56-56-58 56Z" />
-        </svg>
-      </h1>
-
+    <>
       <p className="hint-box screen-intro">Add your home equipment to enable warmup suggestion for home workouts.</p>
 
       <label className="toggle-row">
@@ -250,6 +242,6 @@ export default function EquipmentSettings() {
       </div>
 
       <BackupRestore />
-    </div>
+    </>
   );
 }

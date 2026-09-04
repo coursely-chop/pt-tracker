@@ -140,6 +140,7 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 ```
 {
   id, name,
+  type: "home" | "gym",
   structure: {
     dynamicStretching: string,   // pointer to the separate shared note, not duplicated
     protocol: { workingSets, warmupSets, restBetweenExercisesSec: {min,max}, restBetweenSupersetsSec: {min,max}, notes }
@@ -151,6 +152,8 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 ```
 
 `slots[].exerciseIds` is an array (not a single id) so a slot can hold a primary exercise plus alternates (e.g. tricep-extension/kick-back) — the Workout Builder (PRD §9) reads and writes this array directly, so alternates added or removed there round-trip the same way as the seeded ones.
+
+`type` distinguishes Home Workouts from Gym Workouts (PRD §2/§12) — the only thing it actually changes is whether the free-weight stepper applies `equipment.limitWeightToOwned` (a gym has a full rack, so it never does). Everything else — exercise catalog, builder, protocol, supersets — is identical between the two; `type` is fixed for a workout's lifetime, chosen at creation from which Home Screen tab was active and carried through the builder via `?type=gym`. Set to `"home"` by `loadData()`'s migration for any workout written before this field existed.
 
 ## `completions[]`
 
@@ -188,9 +191,21 @@ What's actually owned, feeding the computed-warmup logic in "Computed warmup wei
 
 `ownedDumbbells` and `ownedKettlebells` are both plain, user-editable lists of lbs values — kept separate because they carry a different real-world assumption: a dumbbell entry means an owned *pair* (enter "10" for a 10 lb pair, not the combined 20), while a kettlebell entry means one. `ownedBands` is a subset of the fixed color catalog in `BAND_WEIGHTS`/`BAND_COLORS` (`lib/equipment.ts`) — which colors exist and what each weighs is physical and not editable, only which ones you actually have is. `ownedLoopBands` is the same idea for the separate closed-loop-band catalog (`LOOP_BAND_STRENGTHS`/`LOOP_BAND_HEX`) — kept apart from `ownedBands` since a loop band and a tube band are different physical equipment even where a color name repeats (see `Load` above). All were hardcoded before the Equipment screen existed (`OWNED_FREE_WEIGHTS` for what's now the dumbbell list, no kettlebell or loop-band concept at all, and tube bands implicitly assumed all-owned); migrating an older snapshot without a field — or with the pre-split single `ownedFreeWeights` list from an earlier version of this screen — defaults or reshapes to those same values, so nobody's computed warmup results changed the moment any of these shipped.
 
-The working free-weight stepper's *values* aren't capped to a small hardcoded list — it walks a fixed 0 (bodyweight) → 3 → 5 → +2.5 sequence (`buildWeightSequence()` in `components/EditModeSheet.tsx`) covering any realistic dumbbell — but whether it walks *that* sequence or just your owned weights is `limitWeightToOwned`'s call: true (the default) swaps it for `[0, ...ownedDumbbells ∪ ownedKettlebells]` instead, falling back to the fixed sequence if nothing's owned yet rather than leaving the stepper stuck at bodyweight. This applies only to the *working*-target editor in Edit Mode and New Exercise — Equipment's own "add a new weight" stepper always uses the fixed sequence (minus bodyweight, since you can't own a 0 lb dumbbell) regardless of this flag, since limiting it to owned weights while using it to add a new one would be circular. The working band picker in Edit Mode still shows all five tube-band colors regardless of ownership either way — bands were never part of this restriction, only free weight.
+The working free-weight stepper's *values* aren't capped to a small hardcoded list — it walks a fixed 0 (bodyweight) → 3 → 5 → +2.5 sequence (`buildWeightSequence()` in `components/EditModeSheet.tsx`) covering any realistic dumbbell — but whether it walks *that* sequence or just your owned weights is `limitWeightToOwned`'s call: true (the default) swaps it for `[0, ...ownedDumbbells ∪ ownedKettlebells ∪ (each ×2)]` instead, falling back to the fixed sequence if nothing's owned yet rather than leaving the stepper stuck at bodyweight. The doubled values matter: a dumbbell entry is an owned *pair*, and holding both together (or one in each hand) reaches twice the per-dumbbell weight — owning a pair of 15s means 30 is a real, reachable load, not just 15. `LoadEditor`'s "Restrict to home equipment" checkbox (inline wherever a free weight is edited) reads and writes this same global flag rather than being its own per-exercise setting — see PRD §5/§9. This applies only to the *working*-target editor in Edit Mode and New Exercise — Equipment's own "add a new weight" stepper always uses the fixed sequence (minus bodyweight, since you can't own a 0 lb dumbbell) regardless of this flag, since limiting it to owned weights while using it to add a new one would be circular. The working band picker in Edit Mode still shows all five tube-band colors regardless of ownership either way — bands were never part of this restriction, only free weight.
+
+Gym workouts skip this restriction entirely, regardless of the flag's value — see `workouts[].type` above.
 
 The dumbbell/kettlebell split **only matters for how Equipment Settings tracks and labels them** — for picking a warmup weight, either is just a number you can grab, so `computeWarmupLoad` (`lib/format.ts`) merges both lists before calling `pickWarmupWeight`. `pickWarmupWeight`/`pickWarmupBand` (`lib/equipment.ts`) both take `owned` as a required parameter, no default — deleting the old hardcoded fallback was deliberate, so a caller can't silently compute against stale equipment by forgetting to pass it. An empty merged list (every weight removed) resolves to `0`, which `computeWarmupLoad` folds into `{ kind: "bodyweight" }` rather than displaying a nonsensical "0 lbs" — the same zero-means-bodyweight convention Edit Mode's merged bodyweight/free-weight stepper already uses.
+
+## `profile`
+
+Personal, non-equipment preferences — currently just the Home Screen greeting name:
+
+```
+{ name: string }
+```
+
+Edited on Settings' General tab (PRD §11). Kept as its own top-level field rather than folded into `equipment`, since a name isn't physical gear. Predates being editable — `loadData()` defaults a missing `profile` to `{ name: "Ben" }`, matching what was previously hardcoded in the Home Workouts greeting.
 
 ## What this app is, on purpose
 

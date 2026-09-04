@@ -116,6 +116,11 @@ export interface Superset {
 export interface Workout {
   id: string;
   name: string;
+  /** "gym" workouts skip the home-equipment weight-stepper restriction
+   * (Equipment.limitWeightToOwned) entirely, on the assumption a gym has a
+   * full weight rack — everything else about a workout is identical either
+   * way, including which exercises can be used. */
+  type: "home" | "gym";
   structure: WorkoutStructure;
   supersets: Superset[];
 }
@@ -173,10 +178,17 @@ export interface Equipment {
   limitWeightToOwned: boolean;
 }
 
+/** Personal, non-equipment preferences — currently just the Home Screen
+ * greeting name. Kept separate from Equipment since it's not physical gear. */
+export interface Profile {
+  name: string;
+}
+
 export interface SeedData {
   exercises: Exercise[];
   workouts: Workout[];
   completions: WorkoutCompletion[];
   notes: Note[];
   equipment: Equipment;
+  profile: Profile;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { capitalize, computeWarmupLoad, todayISO } from "../lib/format";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, computeBandWeight } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
@@ -17,6 +17,14 @@ export function formatLoadPreview(load: Load): string {
 }
 
 export const REPS_STEP = 1;
+
+/** True while editing an exercise reached from a gym workout — set by
+ * WorkoutBuilder (creating/adding exercises) and EditModeSheet itself
+ * (editing an existing target), both of which know which workout is in
+ * play even though LoadEditor, several layers down, doesn't. LoadEditor
+ * reads this to skip the home-equipment stepper restriction outright,
+ * regardless of the global Equipment setting — a gym has a full rack. */
+export const GymModeContext = createContext(false);
 
 /** Real dumbbells don't jump in even intervals at the light end (a 3 lb rehab
  * weight sits between bodyweight and 5), so the weight stepper walks this
@@ -121,7 +129,8 @@ interface EditSnapshot {
 }
 
 export default function EditModeSheet() {
-  const { editingExerciseId, closeEditMode, getExercise, updateExerciseTarget, equipment } = useData();
+  const { editingExerciseId, editingExerciseIsGym, closeEditMode, getExercise, updateExerciseTarget, equipment } =
+    useData();
   const exercise = editingExerciseId ? getExercise(editingExerciseId) : undefined;
 
   const [asymmetric, setAsymmetric] = useState(false);
@@ -325,114 +334,116 @@ export default function EditModeSheet() {
   }
 
   return (
-    <div className="sheet-backdrop" onClick={requestClose}>
-      {/* Keyed by exercise id so every field (native range inputs especially) mounts fresh
-          per exercise, instead of React patching a previous exercise's DOM nodes in place. */}
-      <div key={editingExerciseId} className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-header">
-          <h2>{exercise.name}</h2>
-          <button type="button" className="sheet-close" onClick={requestClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="edit-mode-section">
-          <div className="warmup-enabled-row">
-            <div className="slider-label">Warmup</div>
-            <input
-              type="checkbox"
-              checked={warmupEnabled}
-              onChange={(e) => setWarmupEnabled(e.target.checked)}
-              aria-label="Exercise has a warmup"
-            />
+    <GymModeContext.Provider value={editingExerciseIsGym}>
+        <div className="sheet-backdrop" onClick={requestClose}>
+        {/* Keyed by exercise id so every field (native range inputs especially) mounts fresh
+            per exercise, instead of React patching a previous exercise's DOM nodes in place. */}
+        <div key={editingExerciseId} className="sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-header">
+            <h2>{exercise.name}</h2>
+            <button type="button" className="sheet-close" onClick={requestClose} aria-label="Close">
+              ×
+            </button>
           </div>
-
-          {!warmupEnabled ? (
-            <div className="set-line-none">None required</div>
-          ) : (
-            <>
-              <div className="edit-mode-section-header">
-                <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
-                <label className="toggle-row toggle-row-inline">
-                  <input
-                    type="checkbox"
-                    checked={warmupLinked}
-                    onChange={(e) => setWarmupLinked(e.target.checked)}
-                  />
-                  Match Working (50-75%)
-                </label>
-              </div>
-
-              {asymmetric ? (
-                <div className="sides-editor">
-                  <div className="side-editor">
-                    <div className="side-editor-label">Left</div>
-                    {warmupLinked ? (
-                      <div className="load-editor-preview">
-                        {formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}
-                      </div>
-                    ) : (
-                      <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
-                    )}
-                  </div>
-                  <div className="side-editor">
-                    <div className="side-editor-label">Right</div>
-                    {warmupLinked ? (
-                      <div className="load-editor-preview">
-                        {formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}
-                      </div>
-                    ) : (
-                      <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
-                    )}
-                  </div>
-                </div>
-              ) : warmupLinked ? (
-                <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
-              ) : (
-                <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="edit-mode-section">
-          <div className="slider-label">Working</div>
-
-          {canSplitSides && (
-            <label className="toggle-row">
+  
+          <div className="edit-mode-section">
+            <div className="warmup-enabled-row">
+              <div className="slider-label">Warmup</div>
               <input
                 type="checkbox"
-                checked={asymmetric}
-                onChange={(e) => handleAsymmetricToggle(e.target.checked)}
-              />
-              Left &amp; Right differ
-            </label>
-          )}
-
-          {asymmetric ? (
-            <div className="sides-editor">
-              <SideEditor label="Left" reps={leftReps} setReps={setLeftReps} load={leftLoad} setLoad={setLeftLoad} />
-              <SideEditor
-                label="Right"
-                reps={rightReps}
-                setReps={setRightReps}
-                load={rightLoad}
-                setLoad={setRightLoad}
+                checked={warmupEnabled}
+                onChange={(e) => setWarmupEnabled(e.target.checked)}
+                aria-label="Exercise has a warmup"
               />
             </div>
-          ) : (
-            <>
-              <LoadEditor load={load} setLoad={setLoad} />
-              <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
-            </>
-          )}
+  
+            {!warmupEnabled ? (
+              <div className="set-line-none">None required</div>
+            ) : (
+              <>
+                <div className="edit-mode-section-header">
+                  <Stepper label="Warmup Reps" value={warmupReps} unit="reps" min={1} step={REPS_STEP} onChange={setWarmupReps} />
+                  <label className="toggle-row toggle-row-inline">
+                    <input
+                      type="checkbox"
+                      checked={warmupLinked}
+                      onChange={(e) => setWarmupLinked(e.target.checked)}
+                    />
+                    Match Working (50-75%)
+                  </label>
+                </div>
+  
+                {asymmetric ? (
+                  <div className="sides-editor">
+                    <div className="side-editor">
+                      <div className="side-editor-label">Left</div>
+                      {warmupLinked ? (
+                        <div className="load-editor-preview">
+                          {formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}
+                        </div>
+                      ) : (
+                        <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
+                      )}
+                    </div>
+                    <div className="side-editor">
+                      <div className="side-editor-label">Right</div>
+                      {warmupLinked ? (
+                        <div className="load-editor-preview">
+                          {formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}
+                        </div>
+                      ) : (
+                        <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
+                      )}
+                    </div>
+                  </div>
+                ) : warmupLinked ? (
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
+                ) : (
+                  <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
+                )}
+              </>
+            )}
+          </div>
+  
+          <div className="edit-mode-section">
+            <div className="slider-label">Working</div>
+  
+            {canSplitSides && (
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={asymmetric}
+                  onChange={(e) => handleAsymmetricToggle(e.target.checked)}
+                />
+                Left &amp; Right differ
+              </label>
+            )}
+  
+            {asymmetric ? (
+              <div className="sides-editor">
+                <SideEditor label="Left" reps={leftReps} setReps={setLeftReps} load={leftLoad} setLoad={setLeftLoad} />
+                <SideEditor
+                  label="Right"
+                  reps={rightReps}
+                  setReps={setRightReps}
+                  load={rightLoad}
+                  setLoad={setRightLoad}
+                />
+              </div>
+            ) : (
+              <>
+                <LoadEditor load={load} setLoad={setLoad} />
+                <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
+              </>
+            )}
+          </div>
+  
+          <button type="button" className="save-btn" onClick={handleSave}>
+            Save
+          </button>
         </div>
-
-        <button type="button" className="save-btn" onClick={handleSave}>
-          Save
-        </button>
-      </div>
-    </div>
+        </div>
+    </GymModeContext.Provider>
   );
 }
 
@@ -455,7 +466,8 @@ export function SideEditor({ label, reps, setReps, load, setLoad }: SideEditorPr
 }
 
 export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) => void }) {
-  const { equipment, addOwnedDumbbell } = useData();
+  const { equipment, addOwnedDumbbell, setLimitWeightToOwned } = useData();
+  const isGym = useContext(GymModeContext);
 
   // Bodyweight and free weight share one stepper — bodyweight is just its zero
   // point, not a separate uneditable state. Stepping up from "Bodyweight" adds
@@ -463,16 +475,23 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
   // it back to bodyweight, rather than leaving a meaningless "0 lbs" load.
   if (load.kind === "bodyweight" || load.kind === "freeWeight") {
     const lbs = load.kind === "freeWeight" ? load.lbs : 0;
-    const isOwned = lbs === 0 || equipment.ownedDumbbells.includes(lbs) || equipment.ownedKettlebells.includes(lbs);
-    const ownedWeights = [...new Set([...equipment.ownedDumbbells, ...equipment.ownedKettlebells])].sort(
-      (a, b) => a - b
-    );
+    const singleOwned = [...new Set([...equipment.ownedDumbbells, ...equipment.ownedKettlebells])];
+    // A dumbbell entry is an owned *pair* — held one in each hand, or both
+    // together for a heavier bilateral hold, so a pair of 15s reaches both 15
+    // and 30, not just 15. Kettlebells are counted individually (not pairs),
+    // but a matching pair of two owned kettlebells combines the same way.
+    const ownedWeights = [...new Set([...singleOwned, ...singleOwned.map((w) => w * 2)])].sort((a, b) => a - b);
+    const isOwned = lbs === 0 || ownedWeights.includes(lbs);
+    // A gym has a full rack, so the restriction never applies there regardless
+    // of the global "Limit to what I own" setting — that setting only means
+    // something for a home workout.
+    const restrictToOwned = equipment.limitWeightToOwned && !isGym;
     // "Limit to what I own" (Equipment Settings) swaps the fixed 0/3/5/+2.5
-    // ladder for just your actual dumbbells/kettlebells — falls back to the
-    // fixed ladder if nothing's owned yet, since a stepper limited to only
-    // "Bodyweight" isn't a real choice, it's just stuck.
-    const sequence =
-      equipment.limitWeightToOwned && ownedWeights.length > 0 ? [0, ...ownedWeights] : buildWeightSequence();
+    // ladder for just your actual dumbbells/kettlebells (and their doubled
+    // combinations) — falls back to the fixed ladder if nothing's owned yet,
+    // since a stepper limited to only "Bodyweight" isn't a real choice, it's
+    // just stuck.
+    const sequence = restrictToOwned && ownedWeights.length > 0 ? [0, ...ownedWeights] : buildWeightSequence();
     return (
       <div className="load-editor">
         <Stepper
@@ -492,6 +511,16 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
           <button type="button" className="equipment-add-hint" onClick={() => addOwnedDumbbell(lbs)}>
             + Add {lbs} lbs to your equipment
           </button>
+        )}
+        {!isGym && (
+          <label className="toggle-row toggle-row-inline load-editor-restrict">
+            <input
+              type="checkbox"
+              checked={equipment.limitWeightToOwned}
+              onChange={(e) => setLimitWeightToOwned(e.target.checked)}
+            />
+            Restrict to home equipment
+          </label>
         )}
       </div>
     );

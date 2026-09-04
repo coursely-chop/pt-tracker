@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ExercisePickerSheet from "../components/ExercisePickerSheet";
-import { Stepper } from "../components/EditModeSheet";
+import { GymModeContext, Stepper } from "../components/EditModeSheet";
 import { useData } from "../lib/DataContext";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
 
@@ -61,11 +61,17 @@ function workoutExerciseIds(supersets: BuilderSuperset[]): string[] {
  * or changed rather than a second parallel editing UI. */
 export default function WorkoutBuilder() {
   const { workoutId } = useParams<{ workoutId?: string }>();
+  const [searchParams] = useSearchParams();
   const { getExercise, getWorkout, createWorkout, updateWorkout, deleteWorkout } = useData();
   const navigate = useNavigate();
 
   const isEditing = workoutId !== undefined;
   const existingWorkout = workoutId ? getWorkout(workoutId) : undefined;
+  // Fixed for the life of the workout — there's no UI to convert one type to
+  // the other, only to choose it at creation (via the Home Screen's active
+  // tab, passed as ?type=gym) or inherit it when editing an existing one.
+  const workoutType: Workout["type"] = existingWorkout?.type ?? (searchParams.get("type") === "gym" ? "gym" : "home");
+  const workoutTypeLabel = workoutType === "gym" ? "Gym" : "Home";
 
   const [name, setName] = useState(() => existingWorkout?.name ?? "");
   const [supersets, setSupersets] = useState<BuilderSuperset[]>(() =>
@@ -178,6 +184,7 @@ export default function WorkoutBuilder() {
     }));
     const input = {
       name: name.trim(),
+      type: workoutType,
       dynamicStretching: dynamicStretching.trim(),
       protocol,
       supersets: finalSupersets,
@@ -198,7 +205,7 @@ export default function WorkoutBuilder() {
   }
 
   const backTo = isEditing && workoutId ? `/workouts/${workoutId}` : "/";
-  const backLabel = isEditing && existingWorkout ? `← ${existingWorkout.name}` : "← Home Workouts";
+  const backLabel = isEditing && existingWorkout ? `← ${existingWorkout.name}` : `← ${workoutTypeLabel} Workouts`;
 
   return (
     <div className="screen">
@@ -210,7 +217,7 @@ export default function WorkoutBuilder() {
         className="screen-title screen-title-input"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="New Home Workout"
+        placeholder={`New ${workoutTypeLabel} Workout`}
         aria-label="Workout name"
         autoFocus={!isEditing}
       />
@@ -430,21 +437,25 @@ export default function WorkoutBuilder() {
         ))}
 
       {pickerForSuperset && (
-        <ExercisePickerSheet
-          onClose={() => setPickerForSuperset(null)}
-          onSelect={(exerciseId) => addSlot(pickerForSuperset, exerciseId)}
-          excludeExerciseIds={workoutExerciseIds(supersets)}
-        />
+        <GymModeContext.Provider value={workoutType === "gym"}>
+          <ExercisePickerSheet
+            onClose={() => setPickerForSuperset(null)}
+            onSelect={(exerciseId) => addSlot(pickerForSuperset, exerciseId)}
+            excludeExerciseIds={workoutExerciseIds(supersets)}
+          />
+        </GymModeContext.Provider>
       )}
 
       {pickerForAlternate && (
-        <ExercisePickerSheet
-          onClose={() => setPickerForAlternate(null)}
-          onSelect={(exerciseId) =>
-            addAlternate(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseId)
-          }
-          excludeExerciseIds={workoutExerciseIds(supersets)}
-        />
+        <GymModeContext.Provider value={workoutType === "gym"}>
+          <ExercisePickerSheet
+            onClose={() => setPickerForAlternate(null)}
+            onSelect={(exerciseId) =>
+              addAlternate(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseId)
+            }
+            excludeExerciseIds={workoutExerciseIds(supersets)}
+          />
+        </GymModeContext.Provider>
       )}
     </div>
   );

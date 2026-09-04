@@ -9,6 +9,7 @@ import {
   saveEquipment,
   saveExercise,
   saveNote,
+  saveProfile,
   saveWorkout,
 } from "./storage";
 import { todayISO } from "./format";
@@ -20,6 +21,7 @@ import type {
   ExerciseTarget,
   Note,
   ProgressionEntry,
+  Profile,
   SeedData,
   Superset,
   Workout,
@@ -48,6 +50,7 @@ export interface NewExerciseInput {
 
 export interface NewWorkoutInput {
   name: string;
+  type: Workout["type"];
   dynamicStretching: string;
   protocol: WorkoutProtocol;
   supersets: Superset[];
@@ -59,6 +62,7 @@ interface DataContextValue {
   completions: WorkoutCompletion[];
   notes: Note[];
   equipment: Equipment;
+  profile: Profile;
   getExercise: (id: string) => Exercise | undefined;
   getWorkout: (id: string) => Workout | undefined;
   updateExerciseTarget: (
@@ -79,7 +83,11 @@ interface DataContextValue {
   toggleNotePinned: (noteId: string) => void;
   deleteNote: (noteId: string) => void;
   editingExerciseId: string | null;
-  openEditMode: (exerciseId: string) => void;
+  /** True when the exercise currently open in Edit Mode was reached from a
+   * gym workout — LoadEditor reads this to skip the home-equipment stepper
+   * restriction regardless of the global setting. */
+  editingExerciseIsGym: boolean;
+  openEditMode: (exerciseId: string, isGymWorkout?: boolean) => void;
   closeEditMode: () => void;
   editingDetailsExerciseId: string | null;
   openEditDetails: (exerciseId: string) => void;
@@ -91,6 +99,7 @@ interface DataContextValue {
   toggleOwnedBand: (color: string) => void;
   toggleOwnedLoopBand: (strength: string) => void;
   setLimitWeightToOwned: (limit: boolean) => void;
+  setProfileName: (name: string) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -98,7 +107,13 @@ const DataContext = createContext<DataContextValue | null>(null);
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<SeedData>(() => loadData());
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [editingExerciseIsGym, setEditingExerciseIsGym] = useState(false);
   const [editingDetailsExerciseId, setEditingDetailsExerciseId] = useState<string | null>(null);
+
+  function openEditMode(exerciseId: string, isGymWorkout = false) {
+    setEditingExerciseIsGym(isGymWorkout);
+    setEditingExerciseId(exerciseId);
+  }
 
   const getExercise = (id: string) => data.exercises.find((e) => e.id === id);
   const getWorkout = (id: string) => data.workouts.find((w) => w.id === id);
@@ -169,6 +184,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const workout: Workout = {
       id,
       name: input.name,
+      type: input.type,
       structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
       supersets: input.supersets,
     };
@@ -180,6 +196,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const workout: Workout = {
       id: workoutId,
       name: input.name,
+      type: input.type,
       structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
       supersets: input.supersets,
     };
@@ -261,12 +278,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveEquipment({ ...data.equipment, limitWeightToOwned }));
   }
 
+  function setProfileName(name: string) {
+    setData(saveProfile({ ...data.profile, name }));
+  }
+
   const value: DataContextValue = {
     exercises: data.exercises,
     workouts: data.workouts,
     completions: data.completions,
     notes: data.notes,
     equipment: data.equipment,
+    profile: data.profile,
     getExercise,
     getWorkout,
     updateExerciseTarget,
@@ -281,7 +303,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     toggleNotePinned,
     deleteNote,
     editingExerciseId,
-    openEditMode: setEditingExerciseId,
+    editingExerciseIsGym,
+    openEditMode,
     closeEditMode: () => setEditingExerciseId(null),
     editingDetailsExerciseId,
     openEditDetails: setEditingDetailsExerciseId,
@@ -293,6 +316,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     toggleOwnedBand,
     toggleOwnedLoopBand,
     setLimitWeightToOwned,
+    setProfileName,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
