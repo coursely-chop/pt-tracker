@@ -47,20 +47,23 @@ export function loadData(): SeedData {
       exercises: (parsed.exercises ?? []).map((e) => {
         const legacy = e as Exercise & LegacyExerciseFields;
         const { warmup: _warmup, warmupSpec: _warmupSpec, ...rest } = legacy;
-        // Backfills a still-null warmupReps from the current seed defaults for a
-        // matching stock exercise id. A record's warmupLoad/warmupReps can't
-        // otherwise distinguish "predates this field" from "deliberately turned
-        // off" — saveExercise rewrites every exercise's shape on any single save,
-        // not just the one being edited, so that signal is lost after one write.
-        // Given this app has exactly one user and no one has had the *chance* to
-        // deliberately disable warmup on a stock exercise yet, backfilling is the
-        // safe read today; if that changes, this fallback would need a real
-        // "explicitly configured" marker instead of inferring it from nullness.
+        // Backfills warmupReps from the current seed defaults only when the
+        // field is truly absent (undefined) — a snapshot from before it
+        // existed at all. `null` is a real, deliberate value now that Edit
+        // Mode has a warmup enabled/disabled checkbox: it means "this
+        // exercise's warmup is turned off," not "predates this field." Using
+        // `??` here previously conflated the two, since it treats both
+        // undefined and null as missing — that silently revived warmup on
+        // every reload for any stock exercise where it had been turned off.
         const seedDefault = seedExercises.find((se) => se.id === legacy.id);
+        const warmupReps =
+          legacy.warmupReps !== undefined
+            ? legacy.warmupReps
+            : (legacy.warmupSpec?.reps ?? seedDefault?.warmupReps ?? null);
         return {
           ...rest,
           tags: legacy.tags ?? [],
-          warmupReps: legacy.warmupReps ?? legacy.warmupSpec?.reps ?? seedDefault?.warmupReps ?? null,
+          warmupReps,
           warmupLoad: legacy.warmupLoad ?? null,
         };
       }),
