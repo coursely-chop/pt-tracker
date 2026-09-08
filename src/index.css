@@ -51,8 +51,9 @@ body {
   z-index: -1;
   background: var(--bg);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  padding-bottom: 20px;
 }
 
 .home-page-bg {
