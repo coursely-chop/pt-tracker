@@ -24,7 +24,8 @@ Originally planned as its own landing screen ahead of the workout list — a "We
 
 The root screen (`/`) — a hero banner directly above the workout list, both on one page rather than a separate landing screen (see §1):
 
-- **Hero:** a time-of-day greeting ("Good morning" / "Good afternoon" / "Good evening"), `profile.name`, over a blurred, darkened background photo for legibility. Below it, two tab-style CTAs — **Home Workout** and **Gym Workout** — that switch which list renders below (and scroll to it, since the list is on this same page). Whichever is active renders filled/primary; the other renders as a plain secondary button. Both are real tabs now, not a "coming soon" placeholder — see §12 for what actually differs between the two.
+- **Hero:** a time-of-day greeting ("Good morning" / "Good afternoon" / "Good evening"), `profile.name`. Below it, two tab-style CTAs — **Home Workout** and **Gym Workout** — that switch which list renders below (and scroll to it, since the list is on this same page). Whichever is active renders filled/primary; the other renders as a plain secondary button. Both are real tabs now, not a "coming soon" placeholder — see §12 for what actually differs between the two.
+- **Background:** a small illustrated mascot (a smiling kettlebell, sourced from Figma) centered in the viewport, fixed behind the greeting/tabs/list — not a full-bleed photo. Replaced an earlier blurred/darkened photo treatment, which needed real workarounds for mobile Safari viewport edge cases (see git history) that a plain centered illustration on a solid background doesn't run into at all. The same illustration is the app's Home Screen icon (`public/apple-touch-icon.png`).
 - **List:** the active tab's saved workouts. Each row shows:
   - Name (renaming happens via Edit Workout — §9 — not inline on this list)
   - Last completed date (derived from completion log; "never" if none yet)

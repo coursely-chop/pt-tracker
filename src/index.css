@@ -38,32 +38,29 @@ body {
 }
 
 /* Home Workouts background — fixed to the actual viewport (not tied to
-   .screen's box or scroll height), so the photo is the backdrop for the
-   whole page, not just a bounded top strip: it stays put and shows through
-   behind the greeting and the workout list alike, including any empty
-   space below a short list. z-index:-1 is what keeps it behind ordinary
-   in-flow content without needing every other element to opt into its own
-   stacking context.
-
-   Split into two layers deliberately: iOS PWAs (Home Screen standalone
-   mode) were still clipping the bottom edge even with generous negative
-   insets directly on a filtered fixed element — a filter plus negative
-   offsets on the same fixed-positioned box appears to confuse WebKit's
-   compositing bounds for that box. Keeping the fixed anchor plain
-   (inset:0, no filter) and putting the filter + overscan on an absolutely
-   positioned child inside it sidesteps that. */
+   .screen's box or scroll height), so it stays put behind the greeting and
+   the workout list alike, including any empty space below a short list.
+   z-index:-1 keeps it behind ordinary in-flow content without needing every
+   other element to opt into its own stacking context. A solid fill (rather
+   than the earlier full-bleed photo) sidesteps every mobile-viewport edge
+   case that photo needed workarounds for — a flat color has no edges to
+   miss, so plain inset:0 is genuinely enough here. */
 .home-page-bg-frame {
   position: fixed;
   inset: 0;
   z-index: -1;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .home-page-bg {
-  position: absolute;
-  inset: -15%;
-  background-size: cover;
-  background-position: center 35%;
-  filter: blur(7px) brightness(0.5) saturate(0.9);
+  width: min(60vw, 320px);
+  height: min(60vw, 320px);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .home-hero {

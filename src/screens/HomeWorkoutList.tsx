@@ -4,7 +4,7 @@ import { lastCompletedDate } from "../lib/completions";
 import { formatDate } from "../lib/format";
 import { useData } from "../lib/DataContext";
 import type { Workout } from "../types";
-import heroImage from "../assets/home-hero.jpg";
+import kettlebellIllustration from "../assets/happy-kettlebell.svg";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -28,7 +28,7 @@ export default function HomeWorkoutList() {
   return (
     <div className="screen">
       <div className="home-page-bg-frame" aria-hidden="true">
-        <div className="home-page-bg" style={{ backgroundImage: `url(${heroImage})` }} />
+        <div className="home-page-bg" style={{ backgroundImage: `url(${kettlebellIllustration})` }} />
       </div>
       <div className="home-hero">
         <div className="home-hero-greeting">
