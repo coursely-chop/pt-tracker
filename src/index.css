@@ -59,9 +59,7 @@ body {
 .home-page-bg {
   width: min(60vw, 320px);
   height: min(60vw, 320px);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
+  object-fit: contain;
 }
 
 .home-hero {

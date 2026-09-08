@@ -28,7 +28,7 @@ export default function HomeWorkoutList() {
   return (
     <div className="screen">
       <div className="home-page-bg-frame" aria-hidden="true">
-        <div className="home-page-bg" style={{ backgroundImage: `url(${kettlebellIllustration})` }} />
+        <img src={kettlebellIllustration} alt="" className="home-page-bg" />
       </div>
       <div className="home-hero">
         <div className="home-hero-greeting">
