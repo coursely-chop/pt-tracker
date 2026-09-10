@@ -1,10 +1,14 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   addExercise,
   addWorkout,
+  adoptCloudData,
   deleteNote as deleteNoteFromStorage,
   deleteWorkout as deleteWorkoutFromStorage,
+  fetchCloudData,
+  getLocalUpdatedAt,
   loadData,
+  pushLocalToCloud,
   saveCompletion,
   saveEquipment,
   saveExercise,
@@ -114,6 +118,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setEditingExerciseIsGym(isGymWorkout);
     setEditingExerciseId(exerciseId);
   }
+
+  // Once per app load: reconcile the local copy against the cloud one.
+  // localStorage is what the app already rendered from (instant, works
+  // offline) — this only ever overrides it if the cloud copy is confirmed
+  // more current, which is exactly the case that matters: local storage
+  // having been wiped out from under the app (the actual failure this sync
+  // exists to catch), where local has no data or no updatedAt to compare
+  // against at all. Otherwise, local is pushed up so the cloud stays
+  // current too. Silently does nothing if the sync backend isn't configured
+  // (fetchCloudData resolves to nulls) or unreachable.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const cloud = await fetchCloudData();
+      if (cancelled) return;
+      const localUpdatedAt = getLocalUpdatedAt();
+      if (cloud.data !== null && cloud.updatedAt && (!localUpdatedAt || cloud.updatedAt > localUpdatedAt)) {
+        setData(adoptCloudData(cloud.data));
+      } else {
+        setData((current) => {
+          pushLocalToCloud(current);
+          return current;
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getExercise = (id: string) => data.exercises.find((e) => e.id === id);
   const getWorkout = (id: string) => data.workouts.find((w) => w.id === id);
