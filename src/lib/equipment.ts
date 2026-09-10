@@ -13,8 +13,8 @@ export const DEFAULT_OWNED_LOOP_BANDS = ["light", "moderate", "strong"];
  */
 export const BAND_WEIGHTS: Record<string, number> = {
   yellow: 10,
-  green: 20,
-  blue: 30,
+  blue: 20,
+  green: 30,
   black: 40,
   red: 50,
 };
