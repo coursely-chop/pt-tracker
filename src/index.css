@@ -4,7 +4,7 @@
   --border: oklch(0.33 0.025 245);
   --text: oklch(0.95 0.015 235);
   --text-muted: oklch(0.68 0.02 235);
-  --accent: oklch(0.72 0.13 260);
+  --accent: #2ea8ff;
   --radius: 18px;
   --radius-sm: 14px;
   --font-display: "Zilla Slab", Georgia, serif;
