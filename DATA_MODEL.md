@@ -207,6 +207,10 @@ Personal, non-equipment preferences — currently just the Home Screen greeting 
 
 Edited on Settings' General tab (PRD §11). Kept as its own top-level field rather than folded into `equipment`, since a name isn't physical gear. Predates being editable — `loadData()` defaults a missing `profile` to `{ name: "Ben" }`, matching what was previously hardcoded in the Home Workouts greeting.
 
+## Persistence: localStorage backed by cloud sync
+
+Every field above is stored under one `localStorage` key (`pt-tracker-data`) — that part is unchanged. What's new: `storage.ts`'s `migrate()` (the transform this whole document's field-by-field migration notes describe) is now shared by two callers, not one — `loadData()` runs it against the local snapshot, and `adoptCloudData()` runs the identical transform against a snapshot fetched from a small Supabase-backed sync endpoint, since a cloud snapshot can be exactly as old-shaped as a local one. A second, separate `localStorage` key (`pt-tracker-updated-at`) tracks a plain timestamp, bumped on every write, used to decide whether the local or cloud copy is more current on each load. See PRD's [Cloud sync](PRD.md#cloud-sync) for the full mechanism — this is why the field-level migration notes throughout this document now matter for two data sources, not just one.
+
 ## What this app is, on purpose
 
 - A **reminder**: what exercises, in what order, what weight/band, what form cues — not a workout logger you have to check in with every time.
