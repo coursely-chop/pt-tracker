@@ -59,17 +59,23 @@ async function pushToCloud(data: SeedData): Promise<void> {
 }
 
 /** Cloud's current copy, for the once-per-load reconciliation in
- * DataContext. Returns nulls (rather than throwing) whenever the cloud
- * can't be reached at all, so a failure here just leaves the app running
- * on its local copy — never blocks startup. */
-export async function fetchCloudData(): Promise<{ data: unknown; updatedAt: string | null }> {
-  if (!SYNC_SECRET) return { data: null, updatedAt: null };
+ * DataContext. `reachable: false` covers every failure mode (offline, cold
+ * start, sync not configured, a bad response) — the caller must treat that
+ * as "unknown," never as "cloud confirmed empty." Conflating the two was a
+ * real bug: on a failed fetch, the reconciliation fell back to pushing
+ * local up, which — if local had just been wiped and reseeded to defaults
+ * (the exact failure this sync exists to catch) — overwrote the last good
+ * cloud copy with the empty reseeded one. Only a genuinely successful
+ * response with no row yet counts as confirmed-empty. */
+export async function fetchCloudData(): Promise<{ data: unknown; updatedAt: string | null; reachable: boolean }> {
+  if (!SYNC_SECRET) return { data: null, updatedAt: null, reachable: false };
   try {
     const resp = await fetch("/api/data", { headers: { "x-sync-secret": SYNC_SECRET } });
-    if (!resp.ok) return { data: null, updatedAt: null };
-    return (await resp.json()) as { data: unknown; updatedAt: string | null };
+    if (!resp.ok) return { data: null, updatedAt: null, reachable: false };
+    const body = (await resp.json()) as { data: unknown; updatedAt: string | null };
+    return { ...body, reachable: true };
   } catch {
-    return { data: null, updatedAt: null };
+    return { data: null, updatedAt: null, reachable: false };
   }
 }
 

@@ -126,13 +126,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // having been wiped out from under the app (the actual failure this sync
   // exists to catch), where local has no data or no updatedAt to compare
   // against at all. Otherwise, local is pushed up so the cloud stays
-  // current too. Silently does nothing if the sync backend isn't configured
-  // (fetchCloudData resolves to nulls) or unreachable.
+  // current too — but only once the cloud has actually been reached.
+  // `reachable: false` (sync not configured, offline, a bad response) must
+  // never fall into "push local up": a wiped-and-reseeded local copy
+  // combined with an unreachable cloud looks identical to a genuinely
+  // up-to-date local copy, and pushing in that case would overwrite the
+  // last good cloud copy with the empty reseeded one — the opposite of
+  // what this sync exists to prevent. Unreachable just means try again
+  // next load.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const cloud = await fetchCloudData();
-      if (cancelled) return;
+      if (cancelled || !cloud.reachable) return;
       const localUpdatedAt = getLocalUpdatedAt();
       if (cloud.data !== null && cloud.updatedAt && (!localUpdatedAt || cloud.updatedAt > localUpdatedAt)) {
         setData(adoptCloudData(cloud.data));
