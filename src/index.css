@@ -194,7 +194,10 @@ body {
 }
 
 .workout-card {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -215,6 +218,28 @@ body {
 .workout-card-meta {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* Logged today: the card turns green and gains a flexed-bicep on the right —
+   a small "you did it" beat on the landing page. Reverts on its own the next
+   calendar day, since it's derived from today's date rather than stored.
+   The green is a deeper, cooler emerald than the Figma mock's #55963f: that
+   one reads olive against this app's blue palette and only gives white text
+   3.6:1 contrast; this one is 5:1 and sits with the blues. */
+.workout-card-done {
+  background: #2f7d4f;
+  border-color: #3f9563;
+  color: white;
+}
+
+.workout-card-done .workout-card-meta {
+  color: oklch(1 0 0 / 0.92);
+}
+
+.workout-card-badge {
+  flex: none;
+  font-size: 28px;
+  line-height: 1;
 }
 
 .superset {

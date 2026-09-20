@@ -29,6 +29,7 @@ The root screen (`/`) — a hero banner directly above the workout list, both on
 - **List:** the active tab's saved workouts. Each row shows:
   - Name (renaming happens via Edit Workout — §9 — not inline on this list)
   - Last completed date (derived from completion log; "never" if none yet)
+  - **Logged today → a "done" state.** A workout logged today (on the device's own calendar day) turns its card green, reads "Last completed today at 1:39 PM" (12-hour), and shows a 💪 on the right edge. It reverts by itself the next day to the normal dark card and "Last completed: <date>" — nothing is stored for the state, it's derived from the completion's timestamp. The green is a deeper, cooler emerald than the Figma mock's `#55963f` (which read olive against the blue palette and gave white text only 3.6:1 contrast; this one is 5:1).
   - An empty tab (e.g. no Gym Workouts created yet) shows a plain "No {home/gym} workouts yet — tap + to create one" hint rather than a blank list.
 - FAB (+) → Create New Workout, tagged with whichever tab is currently active (see [§9](#9-create-new-home-workout), [§12](#12-gym-workouts)).
 - A settings icon (gear) is fixed at the bottom-left of the screen (mirroring the FAB's fixed bottom-right) → Settings (§11). Previously an equipment-only icon floated over the top-right corner of the hero photo; moved and renamed once Equipment became one section of a broader Settings screen rather than its own destination.
@@ -114,7 +115,8 @@ Reached by tapping the warmup+working row on Workout Overview (§3, one tap targ
 - A single, low-friction action marking "I did this workout today" — a timestamp, nothing more.
 - Lives on Workout Overview (§3), behind a two-step confirm (tap to arm, tap again to record) to guard against an accidental log.
 - Distinct from progression history: this tracks *that* a workout happened, not what happened inside it.
-- Powers: "last completed" on the Workout List, and the 7-day count on the Welcome screen.
+- Records a full timestamp (`at`) alongside the date, so the Home Screen can show *when* today ("completed today at 1:39 PM") and decide "today" in local time — the stored `date` is a UTC date, which can already read as tomorrow for an evening workout.
+- Powers: "last completed" on the Workout List (including the green done-today card, §2), and the 7-day count on the Welcome screen.
 
 ### 9. Create New Home Workout
 

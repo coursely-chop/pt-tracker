@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { lastCompletedDate } from "../lib/completions";
+import { completedTodayAt, formatTimeOfDay, lastCompletedDate } from "../lib/completions";
 import { formatDate } from "../lib/format";
 import { useData } from "../lib/DataContext";
 import type { Workout } from "../types";
@@ -55,10 +55,26 @@ export default function HomeWorkoutList() {
       <div ref={listRef}>
         {visibleWorkouts.map((workout) => {
           const last = lastCompletedDate(completions, workout.id);
+          const doneAt = completedTodayAt(completions, workout.id);
           return (
-            <Link key={workout.id} to={`/workouts/${workout.id}`} className="workout-card">
-              <div className="workout-card-name">{workout.name}</div>
-              <div className="workout-card-meta">Last completed: {last ? formatDate(last) : "Never"}</div>
+            <Link
+              key={workout.id}
+              to={`/workouts/${workout.id}`}
+              className={`workout-card${doneAt ? " workout-card-done" : ""}`}
+            >
+              <div>
+                <div className="workout-card-name">{workout.name}</div>
+                <div className="workout-card-meta">
+                  {doneAt
+                    ? `Last completed today at ${formatTimeOfDay(doneAt)}`
+                    : `Last completed: ${last ? formatDate(last) : "Never"}`}
+                </div>
+              </div>
+              {doneAt && (
+                <span className="workout-card-badge" aria-hidden="true">
+                  💪
+                </span>
+              )}
             </Link>
           );
         })}

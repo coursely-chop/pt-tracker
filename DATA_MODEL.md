@@ -160,8 +160,10 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 The "Log Workout" action's entire write — one entry per tap, nothing more:
 
 ```
-{ workoutId: string, date: "YYYY-MM-DD" }
+{ workoutId: string, date: "YYYY-MM-DD", at?: string /* full ISO timestamp */ }
 ```
+
+`at` is optional: it's the full ISO timestamp of the tap, added so the Home Screen can say *when* a workout was done today. `date` is a UTC date (`todayISO()`), so it can already be tomorrow for an evening workout — "is this today?" is therefore decided from `at` in the device's local time (`completedTodayAt()` in `lib/completions.ts`), never from `date`. Completions logged before `at` existed simply lack it and never show the done-today state (there's no time to display); nothing needs migrating.
 
 Deliberately separate from `exercises[].progression[]`: this tracks *that* a workout happened, not what happened inside it. "Last completed" on the Workout List is just the max date across a workout's entries — no separate "last completed" field to keep in sync, it's derived (`lib/completions.ts`).
 

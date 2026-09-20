@@ -131,6 +131,11 @@ export interface Workout {
 export interface WorkoutCompletion {
   workoutId: string;
   date: string;
+  /** Full ISO timestamp of the tap. `date` alone can't say what time it
+   * happened (and is a UTC date, so it can land on tomorrow for an evening
+   * workout) — the Home Screen's "completed today at 1:39 PM" card reads this
+   * instead. Absent on completions logged before this field existed. */
+  at?: string;
 }
 
 /**

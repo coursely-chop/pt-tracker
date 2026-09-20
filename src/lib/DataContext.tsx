@@ -247,7 +247,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   function logWorkout(workoutId: string) {
-    setData(saveCompletion({ workoutId, date: todayISO() }));
+    setData(saveCompletion({ workoutId, date: todayISO(), at: new Date().toISOString() }));
   }
 
   function addNote(exerciseId: string, text: string) {
