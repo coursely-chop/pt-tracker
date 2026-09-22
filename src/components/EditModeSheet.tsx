@@ -17,6 +17,62 @@ export function formatLoadPreview(load: Load): string {
   return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
 }
 
+export const LOAD_KINDS: { kind: Load["kind"]; label: string }[] = [
+  { kind: "freeWeight", label: "Free Weight" },
+  { kind: "machine", label: "Machine" },
+  { kind: "band", label: "Band" },
+  { kind: "loopBand", label: "Loop Band" },
+  { kind: "bodyweight", label: "Bodyweight" },
+];
+
+/** Switches to a new load kind, preserving whatever of the current value
+ * still means something under the new kind (free weight <-> machine share a
+ * plain lbs number — no reason to make you re-enter 170 just to fix a
+ * mistaken "Free Weight" into "Machine") rather than always resetting to a
+ * fixed default. Nothing else carries over: a band's colors don't mean
+ * anything as a machine's increment. */
+export function convertLoad(current: Load, kind: Load["kind"]): Load {
+  const lbs = "lbs" in current ? current.lbs : 5;
+  switch (kind) {
+    case "freeWeight":
+      return { kind: "freeWeight", lbs };
+    case "machine":
+      return { kind: "machine", lbs, increment: current.kind === "machine" ? current.increment : 10 };
+    case "band":
+      return { kind: "band", bands: current.kind === "band" ? current.bands : [] };
+    case "loopBand":
+      return { kind: "loopBand", strengths: current.kind === "loopBand" ? current.strengths : [] };
+    case "bodyweight":
+      return { kind: "bodyweight" };
+  }
+}
+
+/** Lets a load's *kind* itself be changed, not just its value — originally
+ * creation-only (existing exercises couldn't change kind at all, only edit
+ * the value of one already fixed by the data), until real use surfaced a
+ * real gap: an exercise created as the wrong kind (e.g. a machine
+ * mis-created as Free Weight) had no way to fix that short of deleting and
+ * recreating it. Shown everywhere a Load is edited now, working or warmup —
+ * rarely used after an exercise's first save, but no real cost to always
+ * showing it, and hiding it behind some other affordance would just be
+ * something else to remember exists. */
+export function LoadKindPicker({ load, setLoad }: { load: Load; setLoad: (l: Load) => void }) {
+  return (
+    <div className="kind-picker">
+      {LOAD_KINDS.map(({ kind, label }) => (
+        <button
+          key={kind}
+          type="button"
+          className={`kind-picker-btn${load.kind === kind ? " selected" : ""}`}
+          onClick={() => setLoad(convertLoad(load, kind))}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export const REPS_STEP = 1;
 
 /** True while editing an exercise reached from a gym workout — set by
@@ -393,7 +449,10 @@ export default function EditModeSheet() {
                           {formatLoadPreview(computeWarmupLoad(leftLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
-                        <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
+                        <>
+                          <LoadKindPicker load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
+                          <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
+                        </>
                       )}
                     </div>
                     <div className="side-editor">
@@ -403,14 +462,20 @@ export default function EditModeSheet() {
                           {formatLoadPreview(computeWarmupLoad(rightLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
-                        <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
+                        <>
+                          <LoadKindPicker load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
+                          <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
+                        </>
                       )}
                     </div>
                   </div>
                 ) : warmupLinked ? (
                   <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment, editingExerciseIsGym))}</div>
                 ) : (
-                  <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
+                  <>
+                    <LoadKindPicker load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
+                    <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
+                  </>
                 )}
               </>
             )}
@@ -443,6 +508,7 @@ export default function EditModeSheet() {
               </div>
             ) : (
               <>
+                <LoadKindPicker load={load} setLoad={setLoad} />
                 <LoadEditor load={load} setLoad={setLoad} />
                 <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
               </>
@@ -470,6 +536,7 @@ export function SideEditor({ label, reps, setReps, load, setLoad }: SideEditorPr
   return (
     <div className="side-editor">
       <div className="side-editor-label">{label}</div>
+      <LoadKindPicker load={load} setLoad={setLoad} />
       <LoadEditor load={load} setLoad={setLoad} />
       <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
     </div>

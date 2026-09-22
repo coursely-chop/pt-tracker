@@ -1,53 +1,10 @@
 import { useContext, useState } from "react";
-import { GymModeContext, LoadEditor, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
+import { GymModeContext, LoadEditor, LoadKindPicker, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
 import { searchExercises } from "../lib/exerciseSearch";
 import { computeWarmupLoad } from "../lib/format";
 import { useBodyScrollLock } from "../lib/useBodyScrollLock";
 import { useData } from "../lib/DataContext";
 import type { ExerciseTarget, Load } from "../types";
-
-const LOAD_KINDS: { kind: Load["kind"]; label: string }[] = [
-  { kind: "freeWeight", label: "Free Weight" },
-  { kind: "machine", label: "Machine" },
-  { kind: "band", label: "Band" },
-  { kind: "loopBand", label: "Loop Band" },
-  { kind: "bodyweight", label: "Bodyweight" },
-];
-
-function defaultLoadForKind(kind: Load["kind"]): Load {
-  switch (kind) {
-    case "freeWeight":
-      return { kind: "freeWeight", lbs: 5 };
-    case "machine":
-      return { kind: "machine", lbs: 50, increment: 10 };
-    case "band":
-      return { kind: "band", bands: [] };
-    case "loopBand":
-      return { kind: "loopBand", strengths: [] };
-    case "bodyweight":
-      return { kind: "bodyweight" };
-  }
-}
-
-/** New exercises need to pick a load *kind* up front — existing exercises never do this
- * through the UI (EditModeSheet's LoadEditor only ever edits the *value* of a kind that's
- * already fixed by the data), so this picker only exists here. */
-function LoadKindPicker({ load, setLoad }: { load: Load; setLoad: (l: Load) => void }) {
-  return (
-    <div className="kind-picker">
-      {LOAD_KINDS.map(({ kind, label }) => (
-        <button
-          key={kind}
-          type="button"
-          className={`kind-picker-btn${load.kind === kind ? " selected" : ""}`}
-          onClick={() => setLoad(defaultLoadForKind(kind))}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 interface ExercisePickerSheetProps {
   onClose: () => void;

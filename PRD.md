@@ -70,6 +70,8 @@ Reached by tapping an exercise on the Workout Overview, when you want more than 
 
 Reached by tapping the warmup+working row on Workout Overview (§3, one tap target for both — see §3), or either section on Movement Detail (§4) — same sheet regardless of which one you tap, since it edits both.
 
+**The load kind itself (Free Weight/Machine/Band/Loop Band/Bodyweight) can be changed here too**, not just its value — a `LoadKindPicker` row above every load editor, working or warmup, same 5-button picker New Exercise (§9) uses. Originally creation-only (an existing exercise's kind was fixed once saved), until real use surfaced a real gap: an exercise created as the wrong kind (a machine mis-created as Free Weight) had no way to fix that short of deleting and recreating it. Switching kind preserves the plain lbs number when one carries over (free weight ↔ machine), since making you re-enter a weight you already had dialed in just to fix a kind mistake would defeat the point; anything else that doesn't mean anything under the new kind (a band's colors, a machine's increment) resets to that kind's default.
+
 **Working**, unchanged from earlier:
 
 - **Free weight (bodyweight included):** one stepper, bodyweight as its zero point — stepping up from "Bodyweight" adds real weight, stepping a light weight back down to 0 collapses it back to bodyweight. Walks a fixed 0/3/5/+2.5 sequence (not a flat interval — a real dumbbell set has an odd jump at the light end, e.g. a 3 lb rehab weight, that no uniform step lands on), unless Equipment's "Limit the weight stepper to equipment I own" is on (the default), which swaps that sequence for just your owned dumbbells/kettlebells — falling back to the fixed sequence if nothing's owned yet.
