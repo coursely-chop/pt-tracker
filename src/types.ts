@@ -6,10 +6,27 @@ export interface FreeWeightLoad {
 export interface BandLoad {
   kind: "band";
   bands: string[];
+  /** Direct total-resistance override in lbs, bypassing the bands[] color
+   * lookup entirely — for a band set whose color-to-weight doesn't match
+   * this app's own fixed catalog (e.g. a trainer's or gym's own bands).
+   * `bands[]` is kept (usually empty) rather than cleared so a color
+   * selection isn't lost if the override is later turned back off. */
+  overrideLbs?: number;
 }
 
 export interface BodyweightLoad {
   kind: "bodyweight";
+}
+
+/** A weight-stack or plate-loaded machine — its own load kind because a
+ * machine isn't owned equipment (no restrict-to-home-equipment logic
+ * applies) and doesn't share free weights' fixed 0/3/5/+2.5 ladder: each
+ * machine has its own increment (2.5, 5, 10, 15...), stored per-load since
+ * it varies machine to machine, not app-wide. */
+export interface MachineLoad {
+  kind: "machine";
+  lbs: number;
+  increment: number;
 }
 
 /** A closed-loop resistance band (e.g. for lateral band walks) — a separate
@@ -21,7 +38,7 @@ export interface LoopBandLoad {
   strengths: ("light" | "moderate" | "strong")[];
 }
 
-export type Load = FreeWeightLoad | BandLoad | BodyweightLoad | LoopBandLoad;
+export type Load = FreeWeightLoad | BandLoad | BodyweightLoad | LoopBandLoad | MachineLoad;
 
 export interface RepRange {
   min: number;

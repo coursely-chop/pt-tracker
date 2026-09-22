@@ -9,7 +9,7 @@ Replace the Apple Note my trainer shares with a local-first app that (a) reminds
 ## MVP Scope
 
 - **In scope:** Home Workout and Gym Workout tracking, as two tagged variants of the same structure (§2, §12).
-- **Out of scope (future):** PT Workouts. Barbell/plate-loaded and machine-stack weights aren't modeled — Gym Workouts share the exact same exercise catalog and `Load` kinds as Home Workouts (see §12); that's a real gap whenever gym-only equipment types are actually wanted.
+- **Out of scope (future):** PT Workouts. True barbell/plate-loaded math (individual plates, a bar's own weight) still isn't modeled — weight-stack machines are now covered by `Load`'s `machine` kind (§5, §12), but "how many 45s are on the bar" is a real gap whenever that's actually wanted.
 - **Deliberately not built:** a per-session, per-set workout logger. See [Logging philosophy](#logging-philosophy).
 
 ## Screens & Flows
@@ -73,7 +73,8 @@ Reached by tapping the warmup+working row on Workout Overview (§3, one tap targ
 **Working**, unchanged from earlier:
 
 - **Free weight (bodyweight included):** one stepper, bodyweight as its zero point — stepping up from "Bodyweight" adds real weight, stepping a light weight back down to 0 collapses it back to bodyweight. Walks a fixed 0/3/5/+2.5 sequence (not a flat interval — a real dumbbell set has an odd jump at the light end, e.g. a 3 lb rehab weight, that no uniform step lands on), unless Equipment's "Limit the weight stepper to equipment I own" is on (the default), which swaps that sequence for just your owned dumbbells/kettlebells — falling back to the fixed sequence if nothing's owned yet.
-- **Band:** band-color (or combo) picker instead of a numeric stepper.
+- **Machine:** a weight stepper plus its own separate "Increment" stepper (2.5 lb steps), since every machine's own plate/stack jump is different (2.5, 5, 10, 15...) and none of them share free weights' fixed ladder. Not owned equipment — no restrict-to-home-equipment toggle applies, and there's no "+ Add to your equipment" prompt, since a machine isn't something you own. Changing the increment re-snaps the current weight onto the new ladder.
+- **Band:** band-color (or combo) picker instead of a numeric stepper, with an "Enter total resistance directly" checkbox alongside it — for a band set that doesn't match this app's fixed color catalog (a trainer's or gym's own bands), entering the number directly skips guessing which of the five colors it's "closest to." Turning the checkbox off goes back to picking colors; turning it on doesn't clear a prior color selection, so switching back and forth doesn't lose it.
 - **Loop band:** a multi-select picker among the three strengths (light/moderate/strong) — same toggle-combo interaction as the tube-band picker, since multiple loop bands are often worn at once.
 - Reps: a stepper, same ±1-at-a-time interaction as weight. (An earlier pass added a toggle for a working-set range like 12-15 — reverted; it added real complexity, keeping min ≤ max valid in the UI, for a use case that didn't earn it. Reps is a single number.)
 - **Left/Right split:** off by default (single combined input). Toggling it splits weight + reps into two parallel inputs labeled Left / Right.
@@ -129,7 +130,7 @@ Triggered by the FAB (+) on the Home Workout List, at `/workouts/new`. A single 
    - Name — pre-filled from the search query that came up empty
    - Left & Right differ toggle
    - A **Working / Warmup tab switcher** (Working active by default) rather than showing both stacked, since warmup is usually just "the same thing, computed" and didn't need equal visual weight:
-     - **Working tab:** load kind — **free weight**, **band**, **loop band**, or **bodyweight/no load** — target reps (Edit Mode's Stepper), same Same/Left-Right components as Edit Mode (§5)
+     - **Working tab:** load kind — **free weight**, **machine**, **band**, **loop band**, or **bodyweight/no load** — target reps (Edit Mode's Stepper), same Same/Left-Right components as Edit Mode (§5)
      - **Warmup tab:** a reps Stepper plus **Match Working (50-75%)**, checked by default — checked shows a computed read-only preview (the same `computeWarmupLoad` used everywhere else), unchecked reveals an independent load editor. A new exercise gets a real warmup out of the box (defaulting to the working reps if the tab is never opened) rather than none — "no warmup" is something to opt out of afterward via Edit Details, not the starting state for something never reviewed.
    - Tags — freeform add/remove chips, same pattern as Edit Exercise Details
    - Everything else — progression rule, cues, links, media — starts empty and gets filled in later via **Edit Exercise Details** (§10). The exercise is saved into the shared library immediately, so it's reusable (and searchable) in future workouts right away, even before that detail is added.
@@ -161,11 +162,16 @@ A dedicated screen (not a sheet — there's no single exercise/workout it's scop
 
 ### 12. Gym Workouts
 
-Structurally identical to Home Workouts — same Workout Builder, same exercise catalog, same supersets/protocol, same Workout Overview and Movement Detail — distinguished only by `workouts[].type` (`"home" | "gym"`, see `DATA_MODEL.md`). The one real behavioral difference: a gym has a full rack, so the free-weight stepper's "restrict to home equipment" logic (§5) never applies to a Gym Workout's exercises, regardless of the global Equipment setting — the "Restrict to home equipment" checkbox doesn't even render there, since it wouldn't do anything.
+Structurally identical to Home Workouts — same Workout Builder, same exercise catalog, same supersets/protocol, same Workout Overview and Movement Detail — distinguished only by `workouts[].type` (`"home" | "gym"`, see `DATA_MODEL.md`). The behavioral difference: a gym has a full rack, so nothing about a Gym Workout's exercises is restricted to what's owned at home.
+
+- The free-weight stepper's "restrict to home equipment" logic (§5) never applies to a Gym Workout's exercises, regardless of the global Equipment setting — the "Restrict to home equipment" checkbox doesn't even render there, since it wouldn't do anything.
+- **The computed warmup (§5) doesn't restrict to home equipment either** — a real gap fixed after showing up in actual use: a 170 lb machine's computed warmup was rounding down to whatever dumbbell happened to be owned at home (e.g. "20 lbs"), since `computeWarmupLoad()` searched owned equipment unconditionally regardless of gym/home. In a Gym Workout, a free-weight warmup now rounds to the nearest 2.5 lbs instead of searching owned dumbbells/kettlebells, and a band/loop-band warmup searches the *full* color catalog instead of `equipment.ownedBands`/`ownedLoopBands`. See `DATA_MODEL.md`'s "Computed warmup weight" for the exact rule.
 
 Created from the Home Screen's Gym Workout tab (§2) — the FAB there links to the same Workout Builder with `?type=gym`, which fixes the new workout's type for its lifetime; editing an existing workout inherits its own type instead of reading the query param. There's no UI to convert a workout from one type to the other after creation.
 
-Exercises themselves are **not** split by type — a "Goblet Squat" is the same exercise whether it's in a Home or Gym workout, so anything you create while adding to a Gym Workout still lands in the one shared exercise library and shows up when browsing from a Home Workout too. This was a deliberate scope call: barbell/plate-loaded and machine-stack weights aren't modeled at all (`Load` is still just freeWeight/band/loopBand/bodyweight — see `DATA_MODEL.md`), so a real gym-only exercise catalog is future scope, not something this pass added.
+Exercises themselves are **not** split by type — a "Goblet Squat" is the same exercise whether it's in a Home or Gym workout, so anything you create while adding to a Gym Workout still lands in the one shared exercise library and shows up when browsing from a Home Workout too.
+
+**Machine weights are now modeled** (a real gap this section used to flag): `Load` has a `machine` kind (§5, `DATA_MODEL.md`) with its own per-load plate/stack increment, since a machine isn't owned equipment and doesn't share free weights' fixed ladder. **Bands with a total-resistance override** (§5) cover the other half of "not restricted to home equipment, and not even the same physical bands" — a trainer's or gym's own band set, entered as a direct number rather than mapped onto this app's five-color home catalog. Still out of scope: true barbell/plate-loaded math (individual plates, a bar's own weight) — `machine`'s single lbs-plus-increment value is a deliberate simplification that covers weight-stack machines well but not "how many 45s are on the bar."
 
 ## Logging philosophy
 

@@ -77,7 +77,7 @@ export default function WorkoutOverview() {
                   {slot.exerciseIds.map((exerciseId) => {
                     const exercise = getExercise(exerciseId);
                     if (!exercise) return null;
-                    const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment);
+                    const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment, workout.type === "gym");
                     const workingLines = getWorkingLines(protocol.workingSets, exercise.target);
 
                     return (

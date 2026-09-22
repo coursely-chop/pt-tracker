@@ -9,8 +9,9 @@ import type { BandLoad, Exercise, ExerciseTarget, Load, LoopBandLoad, Progressio
  * label is enough for a value you can't currently touch. */
 export function formatLoadPreview(load: Load): string {
   if (load.kind === "bodyweight") return "Bodyweight";
-  if (load.kind === "freeWeight") return `${load.lbs} lbs`;
+  if (load.kind === "freeWeight" || load.kind === "machine") return `${load.lbs} lbs`;
   if (load.kind === "loopBand") return load.strengths.map(capitalize).join(" & ") || "—";
+  if (load.overrideLbs != null) return `${load.overrideLbs} lbs`;
   const weight = computeBandWeight(load.bands);
   const label = load.bands.map(capitalize).join(" & ");
   return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
@@ -34,6 +35,16 @@ export const GymModeContext = createContext(false);
 export function buildWeightSequence(includeBodyweight = true): number[] {
   const sequence = includeBodyweight ? [0, 3, 5] : [3, 5];
   for (let w = 7.5; w <= 300; w += 2.5) sequence.push(w);
+  return sequence;
+}
+
+/** A machine's own stepper sequence — just its increment, repeated, since a
+ * weight stack doesn't have free weights' light-end irregularity (no
+ * "3 lb rehab weight" equivalent to special-case). Capped well past any real
+ * stack. */
+function buildMachineSequence(increment: number): number[] {
+  const sequence: number[] = [];
+  for (let w = 0; w <= 500; w += increment) sequence.push(w);
   return sequence;
 }
 
@@ -186,11 +197,11 @@ export default function EditModeSheet() {
     let newWarmupOverrideLoad = warmupOverrideLoad;
     if (startAsymmetric && target.sides) {
       const override = warmupLoad && "left" in warmupLoad ? warmupLoad : null;
-      newWarmupOverrideLeftLoad = cloneLoad(override ? override.left : computeWarmupLoad(target.sides.left.load, equipment));
-      newWarmupOverrideRightLoad = cloneLoad(override ? override.right : computeWarmupLoad(target.sides.right.load, equipment));
+      newWarmupOverrideLeftLoad = cloneLoad(override ? override.left : computeWarmupLoad(target.sides.left.load, equipment, editingExerciseIsGym));
+      newWarmupOverrideRightLoad = cloneLoad(override ? override.right : computeWarmupLoad(target.sides.right.load, equipment, editingExerciseIsGym));
     } else {
       const override = warmupLoad && !("left" in warmupLoad) ? warmupLoad : null;
-      newWarmupOverrideLoad = cloneLoad(override ?? computeWarmupLoad(target.load, equipment));
+      newWarmupOverrideLoad = cloneLoad(override ?? computeWarmupLoad(target.load, equipment, editingExerciseIsGym));
     }
 
     setAsymmetric(startAsymmetric);
@@ -379,7 +390,7 @@ export default function EditModeSheet() {
                       <div className="side-editor-label">Left</div>
                       {warmupLinked ? (
                         <div className="load-editor-preview">
-                          {formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}
+                          {formatLoadPreview(computeWarmupLoad(leftLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
                         <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
@@ -389,7 +400,7 @@ export default function EditModeSheet() {
                       <div className="side-editor-label">Right</div>
                       {warmupLinked ? (
                         <div className="load-editor-preview">
-                          {formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}
+                          {formatLoadPreview(computeWarmupLoad(rightLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
                         <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
@@ -397,7 +408,7 @@ export default function EditModeSheet() {
                     </div>
                   </div>
                 ) : warmupLinked ? (
-                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment, editingExerciseIsGym))}</div>
                 ) : (
                   <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
                 )}
@@ -526,6 +537,36 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
     );
   }
 
+  if (load.kind === "machine") {
+    const machineLoad = load;
+    const sequence = buildMachineSequence(machineLoad.increment);
+    return (
+      <div className="load-editor">
+        <Stepper
+          value={machineLoad.lbs}
+          unit="lbs"
+          step={1}
+          sequence={sequence}
+          onChange={(v) => setLoad({ ...machineLoad, lbs: v })}
+        />
+        {/* Every machine has its own plate/stack increment — not owned
+            equipment, not app-wide, so it's stored per-load and set right
+            here rather than in Equipment Settings. Changing it re-snaps the
+            current weight so it always lands on a real rung. */}
+        <Stepper
+          label="Increment"
+          value={machineLoad.increment}
+          unit="lbs"
+          step={2.5}
+          min={2.5}
+          onChange={(increment) =>
+            setLoad({ ...machineLoad, increment, lbs: roundToStep(machineLoad.lbs, increment) })
+          }
+        />
+      </div>
+    );
+  }
+
   if (load.kind === "loopBand") {
     const loopLoad = load;
     const loopStrengths = loopLoad.strengths as string[];
@@ -569,27 +610,51 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
     setLoad({ ...bandLoad, bands });
   };
   const weight = computeBandWeight(bandLoad.bands);
+  const usingOverride = bandLoad.overrideLbs != null;
 
   return (
     <div className="load-editor">
-      <div className="band-picker">
-        {BAND_COLORS.map((color) => {
-          const selected = bandLoad.bands.includes(color);
-          return (
-            <button
-              key={color}
-              type="button"
-              className={`band-swatch${selected ? " selected" : ""}`}
-              style={{ backgroundColor: BAND_HEX[color] }}
-              onClick={() => toggleBand(color)}
-              aria-pressed={selected}
-              aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs`}
-              title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
-            />
-          );
-        })}
-        <div className="band-weight">{weight > 0 ? `${weight} lbs` : "—"}</div>
-      </div>
+      {usingOverride ? (
+        <Stepper
+          value={bandLoad.overrideLbs ?? 0}
+          unit="lbs"
+          step={5}
+          onChange={(v) => setLoad({ ...bandLoad, overrideLbs: v })}
+        />
+      ) : (
+        <div className="band-picker">
+          {BAND_COLORS.map((color) => {
+            const selected = bandLoad.bands.includes(color);
+            return (
+              <button
+                key={color}
+                type="button"
+                className={`band-swatch${selected ? " selected" : ""}`}
+                style={{ backgroundColor: BAND_HEX[color] }}
+                onClick={() => toggleBand(color)}
+                aria-pressed={selected}
+                aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs`}
+                title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
+              />
+            );
+          })}
+          <div className="band-weight">{weight > 0 ? `${weight} lbs` : "—"}</div>
+        </div>
+      )}
+      {/* For a band set that doesn't match this app's own color catalog — a
+          trainer's or gym's bands — entering the total directly skips the
+          color lookup entirely rather than forcing a guess at which of this
+          app's five colors it's "closest to." */}
+      <label className="toggle-row toggle-row-inline load-editor-restrict">
+        <input
+          type="checkbox"
+          checked={usingOverride}
+          onChange={(e) =>
+            setLoad({ ...bandLoad, overrideLbs: e.target.checked ? weight || 20 : undefined })
+          }
+        />
+        Enter total resistance directly
+      </label>
     </div>
   );
 }

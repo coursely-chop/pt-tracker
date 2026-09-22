@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LoadEditor, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
+import { useContext, useState } from "react";
+import { GymModeContext, LoadEditor, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
 import { searchExercises } from "../lib/exerciseSearch";
 import { computeWarmupLoad } from "../lib/format";
 import { useBodyScrollLock } from "../lib/useBodyScrollLock";
@@ -8,6 +8,7 @@ import type { ExerciseTarget, Load } from "../types";
 
 const LOAD_KINDS: { kind: Load["kind"]; label: string }[] = [
   { kind: "freeWeight", label: "Free Weight" },
+  { kind: "machine", label: "Machine" },
   { kind: "band", label: "Band" },
   { kind: "loopBand", label: "Loop Band" },
   { kind: "bodyweight", label: "Bodyweight" },
@@ -17,6 +18,8 @@ function defaultLoadForKind(kind: Load["kind"]): Load {
   switch (kind) {
     case "freeWeight":
       return { kind: "freeWeight", lbs: 5 };
+    case "machine":
+      return { kind: "machine", lbs: 50, increment: 10 };
     case "band":
       return { kind: "band", bands: [] };
     case "loopBand":
@@ -154,6 +157,7 @@ type CreateTab = "working" | "warmup";
 
 function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
   const { createExercise, equipment } = useData();
+  const isGym = useContext(GymModeContext);
   const [name, setName] = useState(initialName);
   const [asymmetric, setAsymmetric] = useState(false);
   const [activeTab, setActiveTab] = useState<CreateTab>("working");
@@ -294,7 +298,7 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
               <div className="side-editor">
                 <div className="side-editor-label">Left</div>
                 {warmupMatchesWorking ? (
-                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(leftLoad, equipment))}</div>
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(leftLoad, equipment, isGym))}</div>
                 ) : (
                   <LoadEditor load={leftWarmupLoad} setLoad={setLeftWarmupLoad} />
                 )}
@@ -302,14 +306,14 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
               <div className="side-editor">
                 <div className="side-editor-label">Right</div>
                 {warmupMatchesWorking ? (
-                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(rightLoad, equipment))}</div>
+                  <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(rightLoad, equipment, isGym))}</div>
                 ) : (
                   <LoadEditor load={rightWarmupLoad} setLoad={setRightWarmupLoad} />
                 )}
               </div>
             </div>
           ) : warmupMatchesWorking ? (
-            <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment))}</div>
+            <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment, isGym))}</div>
           ) : (
             <LoadEditor load={warmupLoad} setLoad={setWarmupLoad} />
           )}

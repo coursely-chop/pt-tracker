@@ -82,7 +82,7 @@ export default function MovementDetail() {
   const previousExerciseId = slotIndex > 0 ? slots[slotIndex - 1]?.exerciseIds[0] : undefined;
   const nextExerciseId = slotIndex >= 0 ? slots[slotIndex + 1]?.exerciseIds[0] : undefined;
 
-  const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment);
+  const warmupLines = getWarmupLines(protocol.warmupSets, exercise, equipment, workout.type === "gym");
   const workingLines = getWorkingLines(protocol.workingSets, target);
   const historyPath = `/workouts/${workout.id}/exercises/${exercise.id}/history`;
   const exerciseNotes = notesForExercise(notes, exercise.id);
