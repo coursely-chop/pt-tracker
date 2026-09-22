@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { GymModeContext, LoadEditor, LoadKindPicker, REPS_STEP, Stepper, formatLoadPreview } from "./EditModeSheet";
+import { GymModeContext, LoadEditor, LoadKindPicker, REPS_STEP, Stepper, convertLoad, formatLoadPreview } from "./EditModeSheet";
 import { searchExercises } from "../lib/exerciseSearch";
 import { computeWarmupLoad } from "../lib/format";
 import { useBodyScrollLock } from "../lib/useBodyScrollLock";
@@ -148,6 +148,19 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
     setTags(tags.filter((_, i) => i !== index));
   }
 
+  // Same reasoning as Edit Mode's handleKindChange: resistance type is a
+  // property of the exercise as a whole, so one picker sets it for working
+  // and warmup, both sides, all at once — converting each from its own
+  // current value rather than overwriting them all from one shared value.
+  function handleKindChange(kind: Load["kind"]) {
+    setLoad(convertLoad(load, kind));
+    setLeftLoad(convertLoad(leftLoad, kind));
+    setRightLoad(convertLoad(rightLoad, kind));
+    setWarmupLoad(convertLoad(warmupLoad, kind));
+    setLeftWarmupLoad(convertLoad(leftWarmupLoad, kind));
+    setRightWarmupLoad(convertLoad(rightWarmupLoad, kind));
+  }
+
   function handleCreate() {
     if (!canCreate) return;
 
@@ -196,6 +209,11 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
         Left &amp; Right differ
       </label>
 
+      <div className="detail-field">
+        <div className="slider-label">Resistance Type</div>
+        <LoadKindPicker selectedKind={asymmetric ? leftLoad.kind : load.kind} onSelect={handleKindChange} />
+      </div>
+
       <div className="kind-picker">
         <button
           type="button"
@@ -218,20 +236,17 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
           <div className="sides-editor">
             <div className="side-editor">
               <div className="side-editor-label">Left</div>
-              <LoadKindPicker load={leftLoad} setLoad={setLeftLoad} />
               <LoadEditor load={leftLoad} setLoad={setLeftLoad} />
               <Stepper value={leftReps} unit="reps" min={1} step={REPS_STEP} onChange={setLeftReps} />
             </div>
             <div className="side-editor">
               <div className="side-editor-label">Right</div>
-              <LoadKindPicker load={rightLoad} setLoad={setRightLoad} />
               <LoadEditor load={rightLoad} setLoad={setRightLoad} />
               <Stepper value={rightReps} unit="reps" min={1} step={REPS_STEP} onChange={setRightReps} />
             </div>
           </div>
         ) : (
           <>
-            <LoadKindPicker load={load} setLoad={setLoad} />
             <LoadEditor load={load} setLoad={setLoad} />
             <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
           </>

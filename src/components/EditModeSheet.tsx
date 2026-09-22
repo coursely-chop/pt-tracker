@@ -56,15 +56,21 @@ export function convertLoad(current: Load, kind: Load["kind"]): Load {
  * rarely used after an exercise's first save, but no real cost to always
  * showing it, and hiding it behind some other affordance would just be
  * something else to remember exists. */
-export function LoadKindPicker({ load, setLoad }: { load: Load; setLoad: (l: Load) => void }) {
+export function LoadKindPicker({
+  selectedKind,
+  onSelect,
+}: {
+  selectedKind: Load["kind"];
+  onSelect: (kind: Load["kind"]) => void;
+}) {
   return (
     <div className="kind-picker">
       {LOAD_KINDS.map(({ kind, label }) => (
         <button
           key={kind}
           type="button"
-          className={`kind-picker-btn${load.kind === kind ? " selected" : ""}`}
-          onClick={() => setLoad(convertLoad(load, kind))}
+          className={`kind-picker-btn${selectedKind === kind ? " selected" : ""}`}
+          onClick={() => onSelect(kind)}
         >
           {label}
         </button>
@@ -323,6 +329,22 @@ export default function EditModeSheet() {
     }
   }
 
+  // The resistance *type* (Free Weight/Machine/Band/Loop Band/Bodyweight) is a
+  // property of the exercise as a whole, not something that varies between
+  // its working target and warmup, or between left and right — a "Leg Press
+  // Machine" is a machine exercise, full stop. So one picker near the top
+  // changes all six Load slots at once, converting each from its own current
+  // value (not overwriting them all from a single shared value) so a
+  // same-shape field like lbs still carries over per side.
+  function handleKindChange(kind: Load["kind"]) {
+    setLoad(convertLoad(load, kind));
+    setLeftLoad(convertLoad(leftLoad, kind));
+    setRightLoad(convertLoad(rightLoad, kind));
+    setWarmupOverrideLoad(convertLoad(warmupOverrideLoad, kind));
+    setWarmupOverrideLeftLoad(convertLoad(warmupOverrideLeftLoad, kind));
+    setWarmupOverrideRightLoad(convertLoad(warmupOverrideRightLoad, kind));
+  }
+
   function handleAsymmetricToggle(checked: boolean) {
     if (checked) {
       if (exercise!.target.sides == null) {
@@ -412,7 +434,12 @@ export default function EditModeSheet() {
               ×
             </button>
           </div>
-  
+
+          <div className="edit-mode-section">
+            <div className="slider-label">Resistance Type</div>
+            <LoadKindPicker selectedKind={asymmetric ? leftLoad.kind : load.kind} onSelect={handleKindChange} />
+          </div>
+
           <div className="edit-mode-section">
             <div className="warmup-enabled-row">
               <div className="slider-label">Warmup</div>
@@ -449,10 +476,7 @@ export default function EditModeSheet() {
                           {formatLoadPreview(computeWarmupLoad(leftLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
-                        <>
-                          <LoadKindPicker load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
-                          <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
-                        </>
+                        <LoadEditor load={warmupOverrideLeftLoad} setLoad={setWarmupOverrideLeftLoad} />
                       )}
                     </div>
                     <div className="side-editor">
@@ -462,20 +486,14 @@ export default function EditModeSheet() {
                           {formatLoadPreview(computeWarmupLoad(rightLoad, equipment, editingExerciseIsGym))}
                         </div>
                       ) : (
-                        <>
-                          <LoadKindPicker load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
-                          <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
-                        </>
+                        <LoadEditor load={warmupOverrideRightLoad} setLoad={setWarmupOverrideRightLoad} />
                       )}
                     </div>
                   </div>
                 ) : warmupLinked ? (
                   <div className="load-editor-preview">{formatLoadPreview(computeWarmupLoad(load, equipment, editingExerciseIsGym))}</div>
                 ) : (
-                  <>
-                    <LoadKindPicker load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
-                    <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
-                  </>
+                  <LoadEditor load={warmupOverrideLoad} setLoad={setWarmupOverrideLoad} />
                 )}
               </>
             )}
@@ -508,7 +526,6 @@ export default function EditModeSheet() {
               </div>
             ) : (
               <>
-                <LoadKindPicker load={load} setLoad={setLoad} />
                 <LoadEditor load={load} setLoad={setLoad} />
                 <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
               </>
@@ -536,7 +553,6 @@ export function SideEditor({ label, reps, setReps, load, setLoad }: SideEditorPr
   return (
     <div className="side-editor">
       <div className="side-editor-label">{label}</div>
-      <LoadKindPicker load={load} setLoad={setLoad} />
       <LoadEditor load={load} setLoad={setLoad} />
       <Stepper value={reps} unit="reps" min={1} step={REPS_STEP} onChange={setReps} />
     </div>
