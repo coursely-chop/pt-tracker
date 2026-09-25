@@ -83,9 +83,10 @@ interface DataContextValue {
   /** Duplicates a workout — same type, protocol, dynamic stretching note, and
    * supersets/slots (same exercise ids; exercises themselves aren't touched,
    * just referenced again) — as a new, independent workout you can then edit
-   * without affecting the original. Returns the new workout's id, or
-   * undefined if workoutId doesn't resolve to a real workout. */
-  cloneWorkout: (workoutId: string) => string | undefined;
+   * without affecting the original. Returns the new workout itself (id *and*
+   * name — its name is generated here, not something a caller should
+   * recompute) or undefined if workoutId doesn't resolve to a real workout. */
+  cloneWorkout: (workoutId: string) => Workout | undefined;
   deleteWorkout: (workoutId: string) => void;
   logWorkout: (workoutId: string) => void;
   addNote: (exerciseId: string, text: string) => void;
@@ -248,7 +249,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveWorkout(workout));
   }
 
-  function cloneWorkout(workoutId: string): string | undefined {
+  function cloneWorkout(workoutId: string): Workout | undefined {
     const original = data.workouts.find((w) => w.id === workoutId);
     if (!original) return undefined;
     const name = `${original.name} (Copy)`;
@@ -261,7 +262,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // the original through a shared nested array/object reference.
     const clone: Workout = { ...JSON.parse(JSON.stringify(original)), id, name };
     setData(addWorkout(clone));
-    return id;
+    return clone;
   }
 
   function deleteWorkout(workoutId: string) {

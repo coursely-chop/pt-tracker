@@ -1670,3 +1670,17 @@ body {
 .builder-delete-confirm {
   margin-top: 12px;
 }
+
+/* Same green as the home screen's "done today" card — this app's one
+   established color for "something positive just happened." Auto-dismisses
+   itself (see WorkoutBuilder's cloneConfirmation timer) rather than needing
+   a close button. */
+.clone-confirmation {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: #2f7d4f;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}

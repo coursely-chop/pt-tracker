@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ExercisePickerSheet from "../components/ExercisePickerSheet";
 import { GymModeContext, Stepper } from "../components/EditModeSheet";
 import { useData } from "../lib/DataContext";
@@ -64,6 +64,21 @@ export default function WorkoutBuilder() {
   const [searchParams] = useSearchParams();
   const { getExercise, getWorkout, createWorkout, updateWorkout, cloneWorkout, deleteWorkout } = useData();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Set by handleClone via navigate(..., { state }) and read once on mount —
+  // safe as a lazy initializer because this screen now remounts (keyed by
+  // workoutId in App.tsx) whenever Clone navigates from one workout's edit
+  // page to another's.
+  const [cloneConfirmation, setCloneConfirmation] = useState<string | null>(
+    () => (location.state as { clonedWorkoutName?: string } | null)?.clonedWorkoutName ?? null
+  );
+
+  useEffect(() => {
+    if (!cloneConfirmation) return;
+    const timer = setTimeout(() => setCloneConfirmation(null), 4000);
+    return () => clearTimeout(timer);
+  }, [cloneConfirmation]);
 
   const isEditing = workoutId !== undefined;
   const existingWorkout = workoutId ? getWorkout(workoutId) : undefined;
@@ -208,8 +223,8 @@ export default function WorkoutBuilder() {
   // the copy, since the point is to modify it independently right away.
   function handleClone() {
     if (!workoutId) return;
-    const newId = cloneWorkout(workoutId);
-    if (newId) navigate(`/workouts/${newId}/edit`);
+    const clone = cloneWorkout(workoutId);
+    if (clone) navigate(`/workouts/${clone.id}/edit`, { state: { clonedWorkoutName: clone.name } });
   }
 
   const backTo = isEditing && workoutId ? `/workouts/${workoutId}` : "/";
@@ -220,6 +235,7 @@ export default function WorkoutBuilder() {
       <Link to={backTo} className="back-link">
         {backLabel}
       </Link>
+      {cloneConfirmation && <div className="clone-confirmation">Cloned as "{cloneConfirmation}"</div>}
       <input
         type="text"
         className="screen-title screen-title-input"
