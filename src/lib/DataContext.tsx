@@ -80,6 +80,12 @@ interface DataContextValue {
   createExercise: (input: NewExerciseInput) => string;
   createWorkout: (input: NewWorkoutInput) => string;
   updateWorkout: (workoutId: string, input: NewWorkoutInput) => void;
+  /** Duplicates a workout — same type, protocol, dynamic stretching note, and
+   * supersets/slots (same exercise ids; exercises themselves aren't touched,
+   * just referenced again) — as a new, independent workout you can then edit
+   * without affecting the original. Returns the new workout's id, or
+   * undefined if workoutId doesn't resolve to a real workout. */
+  cloneWorkout: (workoutId: string) => string | undefined;
   deleteWorkout: (workoutId: string) => void;
   logWorkout: (workoutId: string) => void;
   addNote: (exerciseId: string, text: string) => void;
@@ -242,6 +248,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveWorkout(workout));
   }
 
+  function cloneWorkout(workoutId: string): string | undefined {
+    const original = data.workouts.find((w) => w.id === workoutId);
+    if (!original) return undefined;
+    const name = `${original.name} (Copy)`;
+    const id = slugify(
+      name,
+      data.workouts.map((w) => w.id)
+    );
+    // Deep-copy via a JSON round-trip (same approach as EditModeSheet's
+    // cloneLoad) so editing the clone's supersets/slots later can't mutate
+    // the original through a shared nested array/object reference.
+    const clone: Workout = { ...JSON.parse(JSON.stringify(original)), id, name };
+    setData(addWorkout(clone));
+    return id;
+  }
+
   function deleteWorkout(workoutId: string) {
     setData(deleteWorkoutFromStorage(workoutId));
   }
@@ -335,6 +357,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     createExercise,
     createWorkout,
     updateWorkout,
+    cloneWorkout,
     deleteWorkout,
     logWorkout,
     addNote,

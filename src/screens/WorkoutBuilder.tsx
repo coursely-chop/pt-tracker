@@ -62,7 +62,7 @@ function workoutExerciseIds(supersets: BuilderSuperset[]): string[] {
 export default function WorkoutBuilder() {
   const { workoutId } = useParams<{ workoutId?: string }>();
   const [searchParams] = useSearchParams();
-  const { getExercise, getWorkout, createWorkout, updateWorkout, deleteWorkout } = useData();
+  const { getExercise, getWorkout, createWorkout, updateWorkout, cloneWorkout, deleteWorkout } = useData();
   const navigate = useNavigate();
 
   const isEditing = workoutId !== undefined;
@@ -202,6 +202,14 @@ export default function WorkoutBuilder() {
     if (!workoutId) return;
     deleteWorkout(workoutId);
     navigate("/");
+  }
+
+  // Non-destructive, so no confirm step (unlike Delete) — straight to editing
+  // the copy, since the point is to modify it independently right away.
+  function handleClone() {
+    if (!workoutId) return;
+    const newId = cloneWorkout(workoutId);
+    if (newId) navigate(`/workouts/${newId}/edit`);
   }
 
   const backTo = isEditing && workoutId ? `/workouts/${workoutId}` : "/";
@@ -431,9 +439,14 @@ export default function WorkoutBuilder() {
             </div>
           </div>
         ) : (
-          <button type="button" className="builder-delete-trigger" onClick={() => setConfirmingDelete(true)}>
-            Delete Workout
-          </button>
+          <div className="builder-secondary-actions">
+            <button type="button" className="builder-clone-trigger" onClick={handleClone}>
+              Clone Workout
+            </button>
+            <button type="button" className="builder-delete-trigger" onClick={() => setConfirmingDelete(true)}>
+              Delete Workout
+            </button>
+          </div>
         ))}
 
       {pickerForSuperset && (

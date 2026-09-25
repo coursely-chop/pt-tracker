@@ -1635,10 +1635,18 @@ body {
   margin-bottom: 12px;
 }
 
-.builder-delete-trigger {
-  display: block;
-  width: 100%;
+/* Clone and Delete share one row instead of stacking as two full-width
+   buttons — neither is the primary action on this screen (Save Changes
+   already is), so there's no reason they need a whole row each. */
+.builder-secondary-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 12px;
+}
+
+.builder-clone-trigger,
+.builder-delete-trigger {
+  flex: 1;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1647,6 +1655,11 @@ body {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.builder-clone-trigger:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .builder-delete-trigger:hover {
