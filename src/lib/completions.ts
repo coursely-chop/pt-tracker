@@ -9,6 +9,16 @@ export function lastCompletedDate(completions: WorkoutCompletion[], workoutId: s
   return dates[dates.length - 1];
 }
 
+/** Sort key for "most recently completed first" — the full timestamp when a
+ * completion has one, else its date at midnight; -Infinity (sorts last) for
+ * a workout that's never been logged. */
+export function lastCompletedAt(completions: WorkoutCompletion[], workoutId: string): number {
+  const times = completions
+    .filter((c) => c.workoutId === workoutId)
+    .map((c) => new Date(c.at ?? c.date).getTime());
+  return times.length ? Math.max(...times) : -Infinity;
+}
+
 function sameLocalDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }

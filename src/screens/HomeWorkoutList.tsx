@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { completedTodayAt, formatTimeOfDay, lastCompletedDate } from "../lib/completions";
+import { completedTodayAt, formatTimeOfDay, lastCompletedAt, lastCompletedDate } from "../lib/completions";
 import { formatDate } from "../lib/format";
 import { useData } from "../lib/DataContext";
 import type { Workout } from "../types";
@@ -23,7 +23,9 @@ export default function HomeWorkoutList() {
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const visibleWorkouts = workouts.filter((w) => w.type === activeTab);
+  const visibleWorkouts = workouts
+    .filter((w) => w.type === activeTab)
+    .sort((a, b) => lastCompletedAt(completions, b.id) - lastCompletedAt(completions, a.id));
 
   return (
     <div className="screen">
