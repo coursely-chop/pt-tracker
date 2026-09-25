@@ -235,7 +235,6 @@ export default function WorkoutBuilder() {
       <Link to={backTo} className="back-link">
         {backLabel}
       </Link>
-      {cloneConfirmation && <div className="clone-confirmation">Cloned as "{cloneConfirmation}"</div>}
       <input
         type="text"
         className="screen-title screen-title-input"
@@ -464,6 +463,8 @@ export default function WorkoutBuilder() {
             </button>
           </div>
         ))}
+
+      {cloneConfirmation && <div className="clone-confirmation">Cloned as "{cloneConfirmation}"</div>}
 
       {pickerForSuperset && (
         <GymModeContext.Provider value={workoutType === "gym"}>
