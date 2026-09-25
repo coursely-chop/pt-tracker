@@ -27,10 +27,8 @@ export default function HomeWorkoutList() {
 
   return (
     <div className="screen">
-      <div className="home-page-bg-frame" aria-hidden="true">
-        <img src={kettlebellIllustration} alt="" className="home-page-bg" />
-      </div>
       <div className="home-hero">
+        <img src={kettlebellIllustration} alt="" className="home-hero-icon" />
         <div className="home-hero-greeting">
           {getGreeting()}, {profile.name}
         </div>

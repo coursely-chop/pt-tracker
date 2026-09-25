@@ -37,29 +37,12 @@ body {
   min-height: 100%;
 }
 
-/* Home Workouts background — fixed to the actual viewport (not tied to
-   .screen's box or scroll height), so it stays put behind the greeting and
-   the workout list alike, including any empty space below a short list.
-   z-index:-1 keeps it behind ordinary in-flow content without needing every
-   other element to opt into its own stacking context. A solid fill (rather
-   than the earlier full-bleed photo) sidesteps every mobile-viewport edge
-   case that photo needed workarounds for — a flat color has no edges to
-   miss, so plain inset:0 is genuinely enough here. */
-.home-page-bg-frame {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--bg);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 20px;
-}
-
-.home-page-bg {
-  width: min(60vw, 320px);
-  height: min(60vw, 320px);
+.home-hero-icon {
+  display: block;
+  width: min(24vw, 128px);
+  height: min(24vw, 128px);
   object-fit: contain;
+  margin: 0 auto 12px;
 }
 
 .home-hero {
@@ -77,6 +60,7 @@ body {
   font-size: 26px;
   font-weight: 600;
   color: white;
+  text-align: center;
   margin-bottom: 16px;
   text-shadow: 0 2px 12px oklch(0.08 0.02 245 / 0.6);
 }
