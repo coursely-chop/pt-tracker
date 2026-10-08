@@ -75,13 +75,33 @@ export interface ExerciseLinks {
   video?: string;
 }
 
+/** An independent ("unlinked") warmup load — a flat Load for a symmetric
+ * exercise, or a left/right pair for an asymmetric one. Null means warmup is
+ * "linked": always computed live as 50-75% of the current working load. */
+export type WarmupOverride = Load | { left: Load; right: Load } | null;
+
+/** A working target or warmup override, split by which kind of workout is
+ * asking — Home and Gym get entirely independent values, never one shared
+ * number. A weight dialed in at the gym (a full rack, specific machines) has
+ * nothing to do with what's actually owned at home, so letting a gym edit
+ * silently change what a home workout shows was a real bug, not just a UI
+ * quirk — see git history for the report that prompted this split. Every
+ * read site picks `home` or `gym` from whichever workout it's rendering for;
+ * nothing falls back to "the other one" or merges them. */
+export interface ByWorkoutType<T> {
+  home: T;
+  gym: T;
+}
+
 export interface Exercise {
   id: string;
   name: string;
-  target: ExerciseTarget;
+  targets: ByWorkoutType<ExerciseTarget>;
   /** Rep count for warmup sets — the one thing about warmup that varies per
    * exercise and isn't derivable from the working target. Null means this
-   * exercise has no warmup at all (and no computed line is shown). */
+   * exercise has no warmup at all (and no computed line is shown). Shared
+   * across Home and Gym — only the *weight*, not the rep count, is venue-
+   * specific enough to need splitting. */
   warmupReps: number | null;
   /**
    * Null (the default) means warmup is "linked" — always computed live as
@@ -90,7 +110,7 @@ export interface Exercise {
    * as the working target: a flat Load for a symmetric exercise, or a left/right
    * pair for the two asymmetric-by-injury exercises. Persists until re-linked.
    */
-  warmupLoad: Load | { left: Load; right: Load } | null;
+  warmupLoads: ByWorkoutType<WarmupOverride>;
   progressionRule: string | null;
   cues: string[];
   /** Freeform, e.g. "legs", "core" — powers the exercise picker's search in Create New Home Workout. */

@@ -28,6 +28,7 @@ import type {
   Profile,
   SeedData,
   Superset,
+  WarmupOverride,
   Workout,
   WorkoutCompletion,
   WorkoutProtocol,
@@ -43,13 +44,18 @@ export interface ExerciseDetailsUpdate {
 
 export interface NewExerciseInput {
   name: string;
+  /** Seeds *both* the Home and Gym buckets with this same target — they only
+   * diverge once one is actually edited independently. A brand-new exercise
+   * is always created from within one specific workout, so there's only ever
+   * one value to enter here; which bucket that workout happens to be isn't
+   * this input's concern. */
   target: ExerciseTarget;
   tags: string[];
   /** Omit to fall back to createExercise's own default (matching the working
    * reps) — pass explicitly once the New Exercise form lets the warmup be
    * configured directly, rather than always deriving it. */
   warmupReps?: number | null;
-  warmupLoad?: Exercise["warmupLoad"];
+  warmupLoad?: WarmupOverride;
 }
 
 export interface NewWorkoutInput {
@@ -71,9 +77,10 @@ interface DataContextValue {
   getWorkout: (id: string) => Workout | undefined;
   updateExerciseTarget: (
     exerciseId: string,
+    isGym: boolean,
     newTarget: ExerciseTarget,
     newEntries: ProgressionEntry[],
-    warmupLoad: Exercise["warmupLoad"],
+    warmupLoad: WarmupOverride,
     warmupReps: Exercise["warmupReps"]
   ) => void;
   updateExerciseDetails: (exerciseId: string, updates: ExerciseDetailsUpdate) => void;
@@ -166,18 +173,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   function updateExerciseTarget(
     exerciseId: string,
+    isGym: boolean,
     newTarget: ExerciseTarget,
     newEntries: ProgressionEntry[],
-    warmupLoad: Exercise["warmupLoad"],
+    warmupLoad: WarmupOverride,
     warmupReps: Exercise["warmupReps"]
   ) {
     const exercise = data.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
+    const bucket = isGym ? "gym" : "home";
     const updated: Exercise = {
       ...exercise,
-      target: newTarget,
+      targets: { ...exercise.targets, [bucket]: newTarget },
       progression: [...exercise.progression, ...newEntries],
-      warmupLoad,
+      warmupLoads: { ...exercise.warmupLoads, [bucket]: warmupLoad },
       warmupReps,
     };
     setData(saveExercise(updated));
@@ -206,12 +215,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       target.perSide && target.sides
         ? Math.min(target.sides.left.reps, target.sides.right.reps)
         : target.reps ?? target.repRange.min;
+    const warmupLoad = input.warmupLoad !== undefined ? input.warmupLoad : null;
     const exercise: Exercise = {
       id,
       name: input.name,
-      target: input.target,
+      targets: { home: input.target, gym: input.target },
       warmupReps: input.warmupReps !== undefined ? input.warmupReps : defaultWarmupReps,
-      warmupLoad: input.warmupLoad !== undefined ? input.warmupLoad : null,
+      warmupLoads: { home: warmupLoad, gym: warmupLoad },
       progressionRule: null,
       cues: [],
       tags: input.tags,

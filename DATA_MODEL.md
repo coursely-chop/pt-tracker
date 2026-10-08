@@ -20,12 +20,14 @@ exercises[]   <-- one source of truth per exercise (target weight, reps, cues, l
 workouts[]    <-- superset structure + protocol, referencing exercise ids only
 ```
 
+**One exception to "exactly one place weight/reps lives":** the working target and warmup override are each split into a Home value and a Gym value (see `targets`/`warmupLoads` below) — not because two workouts of the *same* type should ever disagree, but because a gym's weight has nothing to do with what's owned at home, and letting one silently overwrite the other was a real bug (confirmed: dialing in 40 lbs for a Gym chest press silently showed 40 lbs on the Home version of the same exercise too, a weight not even owned at home). Two Home workouts sharing an exercise still share its Home target, same as before — the split is by venue, not by individual workout.
+
 ## `exercises[]`
 
 ```
 id              stable slug, used as the foreign key from workouts[] and progression[]
 name
-target          current prescribed load/reps — what the app should remind you to do
+targets         { home, gym } — current prescribed load/reps, split by venue (see below)
 cues            string[] of form notes
 tags            string[] — freeform (e.g. "legs", "core"), powers the exercise picker's search
 warmup          string | null — free-text warm-up prescription (fallback, see warmupSpec below)
@@ -44,23 +46,26 @@ Deliberately freeform rather than a fixed taxonomy (`["legs", "arms", "core", ..
 The trainer's note prescribes warmups as "50-75% of working weight," which is fine as a rule but useless as an instruction when you're standing there mid-workout — it requires doing math, then finding a weight that doesn't actually exist in a 3lb/10lb set. So this is computed for every exercise, not read as a vague percentage:
 
 ```
-warmupReps: number | null;                              // rep count; null means no warmup at all
-warmupLoad: Load | { left: Load; right: Load } | null;  // null = linked (computed); set = independent
+warmupReps: number | null;                                        // rep count; null means no warmup at all — shared across Home and Gym
+warmupLoads: {                                                    // split by venue, same reason and same shape as targets below
+  home: Load | { left: Load; right: Load } | null;                // null = linked (computed); set = independent
+  gym:  Load | { left: Load; right: Load } | null;
+}
 ```
 
-`warmupLoad` is null by default — "linked" — meaning warmup is always computed live as 50-75% of whatever `target.load` (or, for asymmetric exercises, `target.sides.left/right.load`) currently is. `getWarmupLines()` finds the closest thing to actually grab from owned equipment:
+`warmupLoads[venue]` is null by default — "linked" — meaning warmup is always computed live as 50-75% of whatever `targets[venue].load` (or, for asymmetric exercises, `targets[venue].sides.left/right.load`) currently is, where `venue` is whichever workout is being rendered (`workout.type`). `getWarmupLines()` finds the closest thing to actually grab from owned equipment:
 
 - **Free weight:** `pickWarmupWeight()` picks whichever owned dumbbell or kettlebell (the Equipment screen — see `## equipment` below) best satisfies the range — the heaviest one that actually falls inside it, or if none do (a real gap in a sparse set), the closest one, tie-breaking toward lighter as the safer direction to be off in.
 - **Band:** `pickWarmupBand()` does the same search over every combination of owned bands (see `BAND_WEIGHTS`/`BAND_COLORS`), by total resistance rather than color — same in-range/closest preference, with an added tie-break toward fewer bands (simpler to grab) before falling back to lighter. A working load using `overrideLbs` (see `Load` above) has no colors to search at all — the warmup is just `overrideLbs * 0.625` rounded to the nearest 5 lbs instead.
 - **Loop band:** `pickWarmupLoopBand()` shares its combo-search core with `pickWarmupBand()` (see `Load` above), just summing ordinal ranks instead of real lbs — a working `["moderate"]` resolves to `["light"]` when all three are owned, one level lighter.
 - **Machine:** not owned equipment, so there's no list to search — always `lbs * 0.625` rounded to the nearest multiple of that load's own `increment`, gym or home alike.
 - **Bodyweight** (or no load) has nothing to scale — it warms up as bodyweight too, which falls out of the math rather than needing a special case.
-- **Asymmetric exercises** (`target.sides`) compute each side independently and show both, the same way the working line does — a single number would misrepresent two genuinely different targets.
-- **Gym workouts** (`workouts[].type === "gym"`) skip the owned-equipment search for free weight and band/loop-band entirely, even when the working load itself doesn't use a machine or an override — a gym has a full rack, so rounding a gym warmup to whatever dumbbells or bands happen to be owned *at home* was always wrong, the same bug the working-set stepper's restrict-to-home-equipment toggle already doesn't have in gym mode (§5 in `PRD.md`). Free weight instead rounds to the nearest 2.5 lbs; band/loop-band search the *full* color catalog rather than `equipment.ownedBands`/`ownedLoopBands`. `computeWarmupLoad()`'s third parameter, `isGym`, is what every caller (`getWarmupLines()`, Edit Mode's "Match Working" preview, New Exercise's warmup preview) threads through from the workout or `GymModeContext` it already has in scope.
+- **Asymmetric exercises** (`targets[venue].sides`) compute each side independently and show both, the same way the working line does — a single number would misrepresent two genuinely different targets.
+- **Gym workouts** (`workouts[].type === "gym"`) skip the owned-equipment search for free weight and band/loop-band entirely, even when the working load itself doesn't use a machine or an override — a gym has a full rack, so rounding a gym warmup to whatever dumbbells or bands happen to be owned *at home* was always wrong, the same bug the working-set stepper's restrict-to-home-equipment toggle already doesn't have in gym mode (§5 in `PRD.md`). Free weight instead rounds to the nearest 2.5 lbs; band/loop-band search the *full* color catalog rather than `equipment.ownedBands`/`ownedLoopBands`. `computeWarmupLoad()`'s third parameter, `isGym`, is what every caller (`getWarmupLines()`, Edit Mode's "Match Working" preview, New Exercise's warmup preview) threads through from the workout or `GymModeContext` it already has in scope — the same `isGym`/`venue` selects which of `targets`/`warmupLoads`' two buckets to read in the first place.
 
-Setting `warmupLoad` "unlinks" it: an independent `Load` (or, for an asymmetric exercise, a `{ left, right }` pair) takes over instead, edited in Edit Mode the same way as the working target — see §5 in `PRD.md`. This is the escape hatch for whenever 50-75% shouldn't apply, and it's what makes the rule safe to apply everywhere rather than needing a per-exercise flag for exceptions: an exception is just an unlink. Unlike the working `target`, an unlinked `warmupLoad` never generates a `progression[]` entry — warmup isn't a tracked metric, just a convenience.
+Setting `warmupLoads[venue]` "unlinks" it: an independent `Load` (or, for an asymmetric exercise, a `{ left, right }` pair) takes over instead, edited in Edit Mode the same way as the working target — see §5 in `PRD.md`. This is the escape hatch for whenever 50-75% shouldn't apply, and it's what makes the rule safe to apply everywhere rather than needing a per-exercise flag for exceptions: an exception is just an unlink. Unlike the working target, an unlinked warmup override never generates a `progression[]` entry — warmup isn't a tracked metric, just a convenience.
 
-An earlier version of this made `warmupLoad` a free-text override (`warmup: string | null`) instead of a structured `Load` — simpler to store, but it meant warmup could only ever be *read*, not edited through the same weight/band controls as everything else. Real use surfaced that as a real gap ("I don't love that you can't edit the warmup, that it's all computed whether you want it or not"), so it was replaced with a structured value editable the same way as `target.load`.
+An earlier version of this made warmup a free-text override (`warmup: string | null`) instead of a structured `Load` — simpler to store, but it meant warmup could only ever be *read*, not edited through the same weight/band controls as everything else. Real use surfaced that as a real gap ("I don't love that you can't edit the warmup, that it's all computed whether you want it or not"), so it was replaced with a structured value editable the same way as the working target.
 
 **`warmupReps: null` is shown, not hidden.** An exercise with no warmup at all (Same Side Dead-Bugs) still gets a Warmup section — it just reads "None required" instead of a computed line, and isn't a tap target (there's no weight to edit when none applies). An earlier version omitted the section entirely for these exercises, which read as broken rather than intentional once the rest of the workout consistently showed both Warmup and Working side by side.
 
@@ -70,12 +75,18 @@ An earlier version of this made `warmupLoad` a free-text override (`warmup: stri
 
 **Migration backfill:** `loadData()` fills a still-null `warmupReps` from the current seed file's default for a matching exercise id. This exists because `saveExercise()` rewrites every exercise's shape on any single save (not just the one being edited), so there's no reliable way to tell "this record predates `warmupReps`" apart from "warmup was deliberately turned off" once even one unrelated exercise has been saved — both end up as `warmupReps: null`. Given this app has exactly one user and no one has yet had the chance to deliberately disable warmup on a stock exercise, backfilling from seed is the safe read today. If that stops being true, this needs a real "explicitly configured" marker instead of inferring intent from nullness.
 
-Because this is computed from `target.load` live, it automatically stays correct as you progress — no separate warmup-weight field to keep in sync.
+Because this is computed from the working load live, it automatically stays correct as you progress — no separate warmup-weight field to keep in sync.
 
-### `target`
+### `targets`
 
 ```
-target: {
+targets: {
+  home: ExerciseTarget,
+  gym:  ExerciseTarget,
+}
+
+// ExerciseTarget:
+{
   repRange: { min, max }       // the exercise's general prescribed range, e.g. 8-15 (metadata, not what gets edited)
   perSide: boolean             // true if reps/load are tracked per side
   reps: number | null          // the LIVE working-set target — what Edit Mode actually changes
@@ -87,7 +98,11 @@ target: {
 }
 ```
 
-`repRange` and `reps` are easy to conflate — both are "a range of numbers" — so to be explicit: `repRange` is fixed exercise metadata (the trainer's stated range, doesn't change from editing), while `reps` is the single number Edit Mode actually writes to. An earlier pass let `reps` also be a range (e.g. "work toward 12-15") via a `RepsTarget = number | RepRange` union, with a min/max split in Edit Mode — that's been reverted. It added real complexity (keeping min ≤ max valid in the UI) for a use case that didn't earn it, so `reps` is back to a plain number everywhere: `target`, per-side targets, and `progression[]` entries alike.
+**Split by venue, not just one shared value.** Every read site (`getWorkingLines()`, `getWarmupLines()`, Edit Mode, Movement Detail) picks `targets.home` or `targets.gym` from whichever workout it's currently rendering for (`workout.type`); nothing ever falls back to "the other one" or merges them. A brand-new exercise seeds both buckets with the same entered value (see `createExercise` in `DataContext.tsx`) — they only diverge once one is actually edited from within a Gym or Home workout. Editing always writes through `updateExerciseTarget(exerciseId, isGym, ...)`, which replaces exactly one bucket.
+
+Before this split, there was exactly one shared `target` — editing the working weight from a Gym workout silently changed what a Home workout using the same exercise showed too, which is how a Gym chest press ended up dialed to a weight (40 lbs on one side) that wasn't even owned at home. Migrating an older snapshot seeds both `home` and `gym` from whatever single `target` it finds (see `storage.ts`'s `migrate()`) — they start out identical and only diverge from the next edit onward, so migrating alone doesn't retroactively fix a value that's wrong for one venue; that still needs a manual edit once, the same as any other data correction.
+
+`repRange` and `reps` are easy to conflate — both are "a range of numbers" — so to be explicit: `repRange` is fixed exercise metadata (the trainer's stated range, doesn't change from editing), while `reps` is the single number Edit Mode actually writes to. An earlier pass let `reps` also be a range (e.g. "work toward 12-15") via a `RepsTarget = number | RepRange` union, with a min/max split in Edit Mode — that's been reverted. It added real complexity (keeping min ≤ max valid in the UI) for a use case that didn't earn it, so `reps` is back to a plain number everywhere: `targets[venue]`, per-side targets, and `progression[]` entries alike.
 
 ### `Load`
 
@@ -113,7 +128,7 @@ A band's equivalent weight isn't stored — it's a fixed property of the bands t
 
 These are the two exercises where left/right get genuinely different weight and reps rather than a symmetric number. That's not incidental — it's your trainer's shoulder-rehab plan: keep training the uninjured (right) arm normally, keep the left slow, light, and controlled. So instead of just storing a smaller number for the left side with no context, each of these exercises carries:
 
-- `target.sides.left.tempo` — a cue that surfaces specifically on the rehab side (e.g. "slow and controlled - shoulder rehab side")
+- `targets[venue].sides.left.tempo` — a cue that surfaces specifically on the rehab side (e.g. "slow and controlled - shoulder rehab side")
 - `asymmetryNote` on the exercise itself, explaining *why* the two sides differ
 
 The goal is that when the app reminds you of this exercise, it doesn't just show "left: 10 lbs" next to "right: 70 lbs" and leave you to remember why — the reasoning travels with the data.

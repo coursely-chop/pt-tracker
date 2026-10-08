@@ -86,16 +86,23 @@ export function pushLocalToCloud(data: SeedData): void {
   void pushToCloud(data);
 }
 
-/** Shapes exercises could take on before warmup became structured — kept
- * narrowly here just for loadData's migration below. `warmup` was a free-text
- * override (and, further back, warmupSpec.reps held today's flat warmupReps);
- * neither converts to a real Load automatically, so migrating just drops them
- * in favor of the safe default (linked/computed) rather than guessing. */
+/** Shapes an exercise could take on before today's fields existed: `warmup`
+ * was a free-text override (and, further back, `warmupSpec.reps` held
+ * today's flat `warmupReps`) — neither converts to a real Load automatically,
+ * so migrating just drops them in favor of the safe default (linked/
+ * computed) rather than guessing. `target`/`warmupLoad` predate working
+ * targets and warmup overrides being split by Home vs Gym — a single value
+ * shared across every workout that referenced the exercise, regardless of
+ * type. Migrating seeds both buckets from that one shared value (they only
+ * diverge once one is actually edited), rather than discarding it. */
 interface LegacyExerciseFields {
   warmup?: string | null;
   warmupSpec?: { reps: number };
   warmupReps?: number | null;
-  warmupLoad?: Exercise["warmupLoad"];
+  warmupLoad?: Exercise["warmupLoads"]["home"];
+  warmupLoads?: Exercise["warmupLoads"];
+  target?: Exercise["targets"]["home"];
+  targets?: Exercise["targets"];
 }
 
 /** Migration-safe: older snapshots (local or cloud) predate the
@@ -105,7 +112,11 @@ interface LegacyExerciseFields {
  * (localStorage) and the cloud-reconciliation path in DataContext, since a
  * cloud snapshot can be just as old-shaped as a local one. */
 function migrate(parsed: Partial<SeedData>): SeedData {
-  const seedExercises = (seedData as SeedData).exercises;
+  // seed-data.json's exercises are still shaped with the legacy single
+  // target/warmupLoad (see LegacyExerciseFields) — only `id`/`warmupReps`
+  // are read here, so there's no need to force the whole file through
+  // today's Exercise shape just to look those two up.
+  const seedExercises = seedData.exercises as unknown as { id: string; warmupReps: number | null }[];
   return {
     exercises: (parsed.exercises ?? []).map((e) => {
       const legacy = e as Exercise & LegacyExerciseFields;
@@ -123,11 +134,17 @@ function migrate(parsed: Partial<SeedData>): SeedData {
         legacy.warmupReps !== undefined
           ? legacy.warmupReps
           : (legacy.warmupSpec?.reps ?? seedDefault?.warmupReps ?? null);
+      const { target: _target, warmupLoad: _warmupLoad, ...restWithoutLegacyFields } = rest;
       return {
-        ...rest,
+        ...restWithoutLegacyFields,
         tags: legacy.tags ?? [],
         warmupReps,
-        warmupLoad: legacy.warmupLoad ?? null,
+        // Every real exercise this app has ever saved has always had a
+        // `target` (it predates this file existing at all), so the fallback
+        // here is never actually exercised against a genuinely blank record
+        // — cast rather than threading `| undefined` through just for that.
+        targets: legacy.targets ?? ({ home: legacy.target, gym: legacy.target } as Exercise["targets"]),
+        warmupLoads: legacy.warmupLoads ?? { home: legacy.warmupLoad ?? null, gym: legacy.warmupLoad ?? null },
       };
     }),
     workouts: (parsed.workouts ?? []).map((w) => ({ ...w, type: (w as Workout & LegacyWorkout).type ?? "home" })),
@@ -159,7 +176,11 @@ export function loadData(): SeedData {
     return migrate(JSON.parse(raw) as Partial<SeedData>);
   }
 
-  const initial = seedData as SeedData;
+  // Routed through migrate() too — the seed file's exercises are still
+  // shaped with the old single `target`/`warmupLoad` (see LegacyExerciseFields
+  // above), so a brand-new install needs the same normalization an existing
+  // user's data gets, rather than a second hand-maintained copy of it.
+  const initial = migrate(seedData as unknown as Partial<SeedData>);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
   return initial;
 }

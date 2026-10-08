@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { capitalize, computeWarmupLoad, todayISO } from "../lib/format";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, computeBandWeight } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
-import type { BandLoad, Exercise, ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget } from "../types";
+import type { BandLoad, ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget, WarmupOverride } from "../types";
 
 /** Read-only text for the "Match Working" preview — no band dots needed here,
  * unlike the glanceable views (Workout Overview, Movement Detail); a plain
@@ -236,7 +236,9 @@ export default function EditModeSheet() {
   // fields and the dirty-tracking snapshot below.
   useEffect(() => {
     if (!exercise) return;
-    const { target, warmupLoad } = exercise;
+    const bucket = editingExerciseIsGym ? "gym" : "home";
+    const target = exercise.targets[bucket];
+    const warmupLoad = exercise.warmupLoads[bucket];
     const startAsymmetric = target.sides != null;
 
     const newLeftReps = target.sides ? target.sides.left.reps : leftReps;
@@ -304,6 +306,8 @@ export default function EditModeSheet() {
 
   if (!exercise) return null;
 
+  const bucket = editingExerciseIsGym ? "gym" : "home";
+
   const currentSnapshot: EditSnapshot = {
     asymmetric,
     reps,
@@ -347,7 +351,7 @@ export default function EditModeSheet() {
 
   function handleAsymmetricToggle(checked: boolean) {
     if (checked) {
-      if (exercise!.target.sides == null) {
+      if (exercise!.targets[bucket].sides == null) {
         // First time splitting: start both sides from the current combined value.
         setLeftLoad(cloneLoad(load));
         setRightLoad(cloneLoad(load));
@@ -376,15 +380,15 @@ export default function EditModeSheet() {
         left: { load: leftLoad, reps: leftReps, tempo: leftTempo } as SideTarget,
         right: { load: rightLoad, reps: rightReps, tempo: rightTempo } as SideTarget,
       };
-      newTarget = { ...exercise.target, reps: null, load: null, sides };
+      newTarget = { ...exercise.targets[bucket], reps: null, load: null, sides };
       entries.push({ date, load: leftLoad, reps: leftReps, note: null, side: "left" });
       entries.push({ date, load: rightLoad, reps: rightReps, note: null, side: "right" });
     } else {
-      newTarget = { ...exercise.target, reps, load, sides: null };
+      newTarget = { ...exercise.targets[bucket], reps, load, sides: null };
       entries.push({ date, load, reps, note: null });
     }
 
-    const newWarmupLoad: Exercise["warmupLoad"] = !warmupEnabled
+    const newWarmupLoad: WarmupOverride = !warmupEnabled
       ? null
       : warmupLinked
         ? null
@@ -396,11 +400,11 @@ export default function EditModeSheet() {
     // exercise with none, back on) — reps only means something when it's on.
     const newWarmupReps = warmupEnabled ? warmupReps : null;
 
-    updateExerciseTarget(exercise.id, newTarget, entries, newWarmupLoad, newWarmupReps);
+    updateExerciseTarget(exercise.id, editingExerciseIsGym, newTarget, entries, newWarmupLoad, newWarmupReps);
     closeEditMode();
   }
 
-  const canSplitSides = exercise.target.perSide;
+  const canSplitSides = exercise.targets[bucket].perSide;
 
   if (confirmingDiscard) {
     return (

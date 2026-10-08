@@ -73,7 +73,7 @@ export default function MovementDetail() {
   }
 
   const { protocol } = workout.structure;
-  const { target } = exercise;
+  const target = exercise.targets[workout.type === "gym" ? "gym" : "home"];
 
   const slots = [...workout.supersets]
     .sort((a, b) => a.order - b.order)

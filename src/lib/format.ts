@@ -129,8 +129,11 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym
  * warmupReps means this exercise has no warmup at all — no line, computed or not.
  */
 export function getWarmupLines(sets: number, exercise: Exercise, equipment: Equipment, isGym: boolean): SetLines | null {
-  const { warmupReps, warmupLoad, target } = exercise;
+  const { warmupReps } = exercise;
   if (warmupReps == null) return null;
+  const bucket = isGym ? "gym" : "home";
+  const target = exercise.targets[bucket];
+  const warmupLoad = exercise.warmupLoads[bucket];
 
   if (target.sides) {
     const { left, right } = target.sides;
