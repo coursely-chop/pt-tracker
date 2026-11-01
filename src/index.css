@@ -456,6 +456,55 @@ body {
   background: rgba(0, 0, 0, 0.25);
 }
 
+.log-workout-wrap {
+  margin: 0 0 20px;
+}
+
+.log-workout-wrap .log-workout {
+  margin-bottom: 0;
+}
+
+.log-workout-past-link {
+  display: block;
+  margin: 10px auto 0;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.log-workout-past-link:hover {
+  color: var(--accent);
+}
+
+.log-workout-date {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  border: none;
+  background: none;
+  color: white;
+  color-scheme: dark;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.log-workout-record {
+  flex: none;
+  padding: 14px 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.log-workout-record:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .fab {
   position: fixed;
   bottom: 24px;

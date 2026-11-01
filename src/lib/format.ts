@@ -161,6 +161,15 @@ export function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Today's date on the device's own calendar (YYYY-MM-DD) — unlike
+ * todayISO(), which is UTC and can already read as tomorrow by evening. Used
+ * for the log-for-a-past-day picker, where the date a person selects is a
+ * local calendar day. */
+export function localDateISO(d = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }

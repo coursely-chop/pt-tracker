@@ -16,7 +16,7 @@ import {
   saveProfile,
   saveWorkout,
 } from "./storage";
-import { todayISO } from "./format";
+import { localDateISO, todayISO } from "./format";
 import { slugify } from "./slug";
 import type {
   Equipment,
@@ -95,7 +95,10 @@ interface DataContextValue {
    * recompute) or undefined if workoutId doesn't resolve to a real workout. */
   cloneWorkout: (workoutId: string) => Workout | undefined;
   deleteWorkout: (workoutId: string) => void;
-  logWorkout: (workoutId: string) => void;
+  /** Logs a completion for today, or — when `pastDate` (a local YYYY-MM-DD)
+   * is given and isn't today — for that earlier day, for a workout done but
+   * not recorded at the time. */
+  logWorkout: (workoutId: string, pastDate?: string) => void;
   addNote: (exerciseId: string, text: string) => void;
   updateNoteText: (noteId: string, text: string) => void;
   toggleNotePinned: (noteId: string) => void;
@@ -279,7 +282,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(deleteWorkoutFromStorage(workoutId));
   }
 
-  function logWorkout(workoutId: string) {
+  function logWorkout(workoutId: string, pastDate?: string) {
+    if (pastDate && pastDate !== localDateISO()) {
+      // Noon local on the chosen day: there's no real time to record, and a
+      // mid-day stamp keeps it on that calendar day in any timezone, so it
+      // never reads as "completed today" on the Home Screen.
+      const at = new Date(`${pastDate}T12:00:00`).toISOString();
+      setData(saveCompletion({ workoutId, date: pastDate, at }));
+      return;
+    }
     setData(saveCompletion({ workoutId, date: todayISO(), at: new Date().toISOString() }));
   }
 

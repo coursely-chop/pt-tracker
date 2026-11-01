@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
-import { formatDate, getWarmupLines, getWorkingLines, todayISO } from "../lib/format";
+import { formatDate, getWarmupLines, getWorkingLines, localDateISO, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
 
 export default function WorkoutOverview() {
@@ -10,6 +10,7 @@ export default function WorkoutOverview() {
   const { getExercise, getWorkout, openEditMode, logWorkout, equipment } = useData();
   const workout = workoutId ? getWorkout(workoutId) : undefined;
   const [armed, setArmed] = useState(false);
+  const [pastDate, setPastDate] = useState<string | null>(null);
 
   if (!workout) {
     return (
@@ -25,10 +26,15 @@ export default function WorkoutOverview() {
   const { protocol } = workout.structure;
   const supersets = [...workout.supersets].sort((a, b) => a.order - b.order);
 
-  function handleConfirmLog() {
+  function handleConfirmLog(date?: string) {
     if (!workout) return;
-    logWorkout(workout.id);
+    logWorkout(workout.id, date);
     navigate("/");
+  }
+
+  function cancelLogging() {
+    setArmed(false);
+    setPastDate(null);
   }
 
   return (
@@ -45,24 +51,50 @@ export default function WorkoutOverview() {
         </Link>
       </div>
 
-      {armed ? (
-        <div className="log-workout log-workout-confirm">
-          <button type="button" className="log-workout-confirm-main" onClick={handleConfirmLog}>
-            Record Workout on {formatDate(todayISO())}
-          </button>
-          <button
-            type="button"
-            className="log-workout-cancel"
-            onClick={() => setArmed(false)}
-            aria-label="Cancel logging workout"
-          >
-            ×
+      {pastDate !== null ? (
+        <div className="log-workout-wrap">
+          <div className="log-workout log-workout-confirm">
+            <input
+              type="date"
+              className="log-workout-date"
+              value={pastDate}
+              max={localDateISO()}
+              onChange={(e) => setPastDate(e.target.value)}
+              aria-label="Date the workout was done"
+            />
+            <button
+              type="button"
+              className="log-workout-confirm-main log-workout-record"
+              disabled={!pastDate}
+              onClick={() => handleConfirmLog(pastDate)}
+            >
+              Record
+            </button>
+            <button type="button" className="log-workout-cancel" onClick={cancelLogging} aria-label="Cancel logging workout">
+              ×
+            </button>
+          </div>
+        </div>
+      ) : armed ? (
+        <div className="log-workout-wrap">
+          <div className="log-workout log-workout-confirm">
+            <button type="button" className="log-workout-confirm-main" onClick={() => handleConfirmLog()}>
+              Record Workout on {formatDate(todayISO())}
+            </button>
+            <button type="button" className="log-workout-cancel" onClick={cancelLogging} aria-label="Cancel logging workout">
+              ×
+            </button>
+          </div>
+          <button type="button" className="log-workout-past-link" onClick={() => setPastDate(localDateISO())}>
+            Log for a different day
           </button>
         </div>
       ) : (
-        <button type="button" className="log-workout" onClick={() => setArmed(true)}>
-          Log Workout
-        </button>
+        <div className="log-workout-wrap">
+          <button type="button" className="log-workout" onClick={() => setArmed(true)}>
+            Log Workout
+          </button>
+        </div>
       )}
 
       {supersets.map((superset) => (
