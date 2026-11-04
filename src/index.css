@@ -1060,6 +1060,14 @@ body {
   gap: 6px;
 }
 
+.legend-swatch.chart-series-left {
+  background: #34d399;
+}
+
+.legend-swatch.chart-series-right {
+  background: #f472b6;
+}
+
 .legend-swatch {
   width: 10px;
   height: 10px;

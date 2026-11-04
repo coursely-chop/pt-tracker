@@ -24,6 +24,11 @@ export default function History() {
 
   const { points, skippedCount } = getHistoryData(exercise, workout.type);
   const hasSides = points.some((p) => p.side);
+  // Most recent point per side — the chart shows weight over time, so reps
+  // (and the exact latest value) are spelled out here instead.
+  const latest = (["left", "right", undefined] as const)
+    .map((side) => points.filter((p) => p.side === side).sort((a, b) => a.date.localeCompare(b.date)).pop())
+    .filter((p): p is NonNullable<typeof p> => p !== undefined);
   const movementPath = `/workouts/${workout.id}/exercises/${exercise.id}`;
 
   return (
@@ -56,6 +61,16 @@ export default function History() {
             </div>
           )}
         </>
+      )}
+
+      {points.length > 1 && (
+        <div className="chart-note">
+          {latest.map((p) => (
+            <div key={p.side ?? "combined"}>
+              Latest{p.side ? ` ${p.side}` : ""}: {p.weight} lbs × {p.reps} reps ({formatDate(p.date)})
+            </div>
+          ))}
+        </div>
       )}
 
       {skippedCount > 0 && (

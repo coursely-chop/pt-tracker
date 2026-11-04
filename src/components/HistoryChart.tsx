@@ -15,38 +15,45 @@ function seriesClass(side: HistoryPoint["side"]): string {
   return "chart-series-default";
 }
 
-/** Connected scatter: weight on X, reps on Y, points joined chronologically
- * within each side so the trajectory (not just a cloud of dots) is visible. */
-export default function HistoryChart({ points }: { points: HistoryPoint[] }) {
-  const weights = points.map((p) => p.weight);
-  const reps = points.map((p) => p.reps);
-  const weightSpan = Math.max(...weights) - Math.min(...weights);
-  const repsSpan = Math.max(...reps) - Math.min(...reps);
-  const weightPad = weightSpan > 0 ? weightSpan * 0.15 : 1;
-  const repsPad = repsSpan > 0 ? repsSpan * 0.15 : 1;
+function dayTime(date: string): number {
+  return new Date(`${date}T12:00:00`).getTime();
+}
 
-  const xMin = Math.min(...weights) - weightPad;
-  const xMax = Math.max(...weights) + weightPad;
-  const yMin = Math.min(...reps) - repsPad;
-  const yMax = Math.max(...reps) + repsPad;
+function shortDate(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** Weight over time: date on X, weight on Y, one line per side. An earlier
+ * version plotted weight against reps — but progress here is almost always a
+ * heavier weight at the same reps, which drew a flat horizontal line however
+ * much you'd improved. Reps live in each point's label (tap/hover) and in the
+ * "Latest" line under the chart instead. */
+export default function HistoryChart({ points }: { points: HistoryPoint[] }) {
+  const times = points.map((p) => dayTime(p.date));
+  const weights = points.map((p) => p.weight);
+  const weightSpan = Math.max(...weights) - Math.min(...weights);
+  const weightPad = weightSpan > 0 ? weightSpan * 0.15 : 1;
+
+  const xMin = Math.min(...times);
+  const xMax = Math.max(...times);
+  const yMin = Math.min(...weights) - weightPad;
+  const yMax = Math.max(...weights) + weightPad;
+  const sortedDates = points.map((p) => p.date).sort();
 
   function toXY(p: HistoryPoint) {
     return {
-      x: scale(p.weight, xMin, xMax, PADDING, WIDTH - PADDING),
-      y: scale(p.reps, yMin, yMax, HEIGHT - PADDING, PADDING), // inverted: higher reps sits higher on screen
+      x: scale(dayTime(p.date), xMin, xMax, PADDING, WIDTH - PADDING),
+      y: scale(p.weight, yMin, yMax, HEIGHT - PADDING, PADDING),
     };
   }
 
   const sideKeys = Array.from(new Set(points.map((p) => p.side ?? "combined")));
 
   return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="history-chart" role="img" aria-label="Weight versus reps history">
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="history-chart" role="img" aria-label="Weight over time">
       <line x1={PADDING} y1={HEIGHT - PADDING} x2={WIDTH - PADDING} y2={HEIGHT - PADDING} className="chart-axis" />
       <line x1={PADDING} y1={PADDING} x2={PADDING} y2={HEIGHT - PADDING} className="chart-axis" />
 
-      <text x={WIDTH / 2} y={HEIGHT - 6} className="chart-axis-label" textAnchor="middle">
-        Weight (lbs)
-      </text>
       <text
         x={10}
         y={HEIGHT / 2}
@@ -54,20 +61,20 @@ export default function HistoryChart({ points }: { points: HistoryPoint[] }) {
         textAnchor="middle"
         transform={`rotate(-90 10 ${HEIGHT / 2})`}
       >
-        Reps
+        Weight (lbs)
       </text>
 
       <text x={PADDING} y={HEIGHT - PADDING + 14} className="chart-tick" textAnchor="start">
-        {Math.round(Math.min(...weights))}
+        {shortDate(sortedDates[0])}
       </text>
       <text x={WIDTH - PADDING} y={HEIGHT - PADDING + 14} className="chart-tick" textAnchor="end">
-        {Math.round(Math.max(...weights))}
+        {shortDate(sortedDates[sortedDates.length - 1])}
       </text>
       <text x={PADDING - 6} y={HEIGHT - PADDING} className="chart-tick" textAnchor="end">
-        {Math.round(Math.min(...reps))}
+        {Math.round(Math.min(...weights))}
       </text>
-      <text x={PADDING - 6} y={PADDING} className="chart-tick" textAnchor="end">
-        {Math.round(Math.max(...reps))}
+      <text x={PADDING - 6} y={PADDING + 4} className="chart-tick" textAnchor="end">
+        {Math.round(Math.max(...weights))}
       </text>
 
       {sideKeys.map((sideKey) => {
