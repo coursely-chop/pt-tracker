@@ -185,10 +185,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const exercise = data.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
     const bucket = isGym ? "gym" : "home";
+    // Saving several times in one day (fixing a typo, nudging a weight) keeps
+    // only the last value for that day/venue/side, not one row per save —
+    // the earlier ones were never real checkpoints. Entries carrying a note
+    // are deliberate and always kept.
+    const superseded = (p: ProgressionEntry) =>
+      p.note === null &&
+      newEntries.some((n) => n.date === p.date && n.side === p.side && (n.venue ?? "home") === (p.venue ?? "home"));
     const updated: Exercise = {
       ...exercise,
       targets: { ...exercise.targets, [bucket]: newTarget },
-      progression: [...exercise.progression, ...newEntries],
+      progression: [...exercise.progression.filter((p) => !superseded(p)), ...newEntries],
       warmupLoads: { ...exercise.warmupLoads, [bucket]: warmupLoad },
       warmupReps,
     };

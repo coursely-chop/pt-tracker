@@ -140,8 +140,10 @@ For the other asymmetric-*capable* exercises (Side Lunges, Single Leg Deadlift),
 This is **not** a per-session workout log — you don't need to check in every time you do the workout. It's a lightweight log of the trainer's own dated notes on weight changes (e.g. Side Lunges: "6/25- used 6lbs", "7/24- used 10lbs", and the current value dated "7/28"). You'd add an entry here only when the target weight/reps actually changes, which is exactly what "track how the reps/weight goes up over time" needs — a timeline of target changes, not a diary of every workout instance.
 
 ```
-{ date: "YYYY-MM-DD", load: Load | null, reps: number | null, note: string | null, side?: "left" | "right" }
+{ date: "YYYY-MM-DD", load: Load | null, reps: number | null, note: string | null, side?: "left" | "right", venue?: "home" | "gym" }
 ```
+
+**`venue`** records which kind of workout the change was made from, for the same reason `targets`/`warmupLoads` are split: Home and Gym weights are independent, and one shared timeline put a gym 45 lb chest press next to a home 20 lb one. Absent means Home (the trainer-note and pre-gym entries). **One entry per day, venue, and side:** Edit Mode saves replace an earlier un-noted entry with the same date/venue/side rather than appending (`updateExerciseTarget`), so fixing a typo or nudging a weight twice in a session doesn't leave two rows; entries with a `note` are always kept. Dates use the device's local calendar day, not UTC, so one day's saves group together.
 
 **Assumption flagged:** the source note only gave month/day ("6/25", "7/24", "7/28"), no year. Since today's date is 2026-08-05 and those three dates fall in a plausible recent progression right before today, I inferred year **2026**. If the note is actually older than that, these dates need correcting.
 

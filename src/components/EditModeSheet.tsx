@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { capitalize, computeWarmupLoad, todayISO } from "../lib/format";
+import { capitalize, computeWarmupLoad, localDateISO } from "../lib/format";
 import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, computeBandWeight } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
 import type { BandLoad, ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget, WarmupOverride } from "../types";
@@ -371,7 +371,9 @@ export default function EditModeSheet() {
 
   function handleSave() {
     if (!exercise) return;
-    const date = todayISO();
+    // Local calendar day (not todayISO()'s UTC one, which can read as tomorrow
+    // by evening) so one day's saves all land on the same date and collapse.
+    const date = localDateISO();
     const entries: ProgressionEntry[] = [];
     let newTarget: ExerciseTarget;
 
@@ -381,11 +383,11 @@ export default function EditModeSheet() {
         right: { load: rightLoad, reps: rightReps, tempo: rightTempo } as SideTarget,
       };
       newTarget = { ...exercise.targets[bucket], reps: null, load: null, sides };
-      entries.push({ date, load: leftLoad, reps: leftReps, note: null, side: "left" });
-      entries.push({ date, load: rightLoad, reps: rightReps, note: null, side: "right" });
+      entries.push({ date, load: leftLoad, reps: leftReps, note: null, side: "left", venue: bucket });
+      entries.push({ date, load: rightLoad, reps: rightReps, note: null, side: "right", venue: bucket });
     } else {
       newTarget = { ...exercise.targets[bucket], reps, load, sides: null };
-      entries.push({ date, load, reps, note: null });
+      entries.push({ date, load, reps, note: null, venue: bucket });
     }
 
     const newWarmupLoad: WarmupOverride = !warmupEnabled

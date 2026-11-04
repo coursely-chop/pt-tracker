@@ -68,6 +68,12 @@ export interface ProgressionEntry {
   reps: number | null;
   note: string | null;
   side?: "left" | "right";
+  /** Which kind of workout the change was made from. Home and Gym weights
+   * are independent (see ByWorkoutType), so a shared timeline mixed a gym
+   * 45 lb press in with a home 20 lb one. Absent on entries from before
+   * this field existed (the early trainer-note and pre-gym history), which
+   * are all Home. */
+  venue?: "home" | "gym";
 }
 
 export interface ExerciseLinks {

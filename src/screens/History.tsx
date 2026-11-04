@@ -22,7 +22,7 @@ export default function History() {
     );
   }
 
-  const { points, skippedCount } = getHistoryData(exercise);
+  const { points, skippedCount } = getHistoryData(exercise, workout.type);
   const hasSides = points.some((p) => p.side);
   const movementPath = `/workouts/${workout.id}/exercises/${exercise.id}`;
 
@@ -31,7 +31,7 @@ export default function History() {
       <Link to={movementPath} className="back-link">
         ← {exercise.name}
       </Link>
-      <h1 className="screen-title">History</h1>
+      <h1 className="screen-title">{workout.type === "gym" ? "Gym" : "Home"} History</h1>
 
       {points.length === 0 && <p className="empty-state">No progression history yet — this fills in as you adjust reps/weight over time.</p>}
 

@@ -109,7 +109,7 @@ Originally this kind couldn't be changed at all after an exercise was first crea
 
 ### 7. History
 
-- Reached via a "View History" link on Movement Detail.
+- Reached via a "View History" link on Movement Detail. Shows **only the venue of the workout you came from** (titled "Home History" or "Gym History") — Home and Gym weights are independent, so each has its own timeline. Saving the same exercise several times in one day keeps just the last value for that day, not one point per save.
 - **Connected scatter:** each past progression entry plotted as a point (weight on X, reps on Y), connected in chronological order so the trajectory is visible, not just a cloud of dots.
 - Only entries with **both** a weight and a rep value get plotted — some progression entries (older trainer notes, a note-only entry) have just one or neither. Those are counted and disclosed ("N earlier entries ... not shown") rather than silently making the chart look sparser than the real history, or silently making one up.
 - Asymmetric exercises (left/right progression entries) get two separate connected series, color-coded, with a small legend — not one line blending two different loads together.

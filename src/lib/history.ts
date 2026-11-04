@@ -10,8 +10,9 @@ export interface HistoryPoint {
 
 function extractWeight(load: Load | null): number | null {
   if (!load) return null;
-  if (load.kind === "freeWeight") return load.lbs;
+  if (load.kind === "freeWeight" || load.kind === "machine") return load.lbs;
   if (load.kind === "band") {
+    if (load.overrideLbs != null) return load.overrideLbs;
     const weight = computeBandWeight(load.bands);
     return weight > 0 ? weight : null;
   }
@@ -24,15 +25,21 @@ function extractWeight(load: Load | null): number | null {
  * actual change) record just one or neither. skippedCount surfaces that so the
  * chart doesn't silently look sparser than the real history.
  */
-export function getHistoryData(exercise: Exercise): { points: HistoryPoint[]; skippedCount: number } {
+export function getHistoryData(
+  exercise: Exercise,
+  venue: "home" | "gym"
+): { points: HistoryPoint[]; skippedCount: number } {
   const points: HistoryPoint[] = [];
+  // Home and Gym are independent timelines — an entry with no venue
+  // predates the split and is Home.
+  const entries = exercise.progression.filter((e) => (e.venue ?? "home") === venue);
 
-  for (const entry of exercise.progression) {
+  for (const entry of entries) {
     const weight = extractWeight(entry.load);
     const reps = entry.reps;
     if (weight == null || reps == null) continue;
     points.push({ date: entry.date, weight, reps, side: entry.side });
   }
 
-  return { points, skippedCount: exercise.progression.length - points.length };
+  return { points, skippedCount: entries.length - points.length };
 }
