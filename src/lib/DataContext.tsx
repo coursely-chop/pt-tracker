@@ -43,8 +43,6 @@ export interface ExerciseUpdate {
   entries: ProgressionEntry[];
   warmupLoad: WarmupOverride;
   warmupReps: Exercise["warmupReps"];
-  /** Undefined clears a picked icon back to automatic. */
-  icon: string | undefined;
 }
 
 export interface NewExerciseInput {
@@ -61,12 +59,12 @@ export interface NewExerciseInput {
    * configured directly, rather than always deriving it. */
   warmupReps?: number | null;
   warmupLoad?: WarmupOverride;
-  icon?: string;
 }
 
 export interface NewWorkoutInput {
   name: string;
   type: Workout["type"];
+  emoji?: string;
   dynamicStretching: string;
   protocol: WorkoutProtocol;
   supersets: Superset[];
@@ -181,7 +179,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updated: Exercise = {
       ...exercise,
       name: update.name,
-      icon: update.icon,
       targets: { ...exercise.targets, [bucket]: update.target },
       progression: [...exercise.progression.filter((p) => !superseded(p)), ...update.entries],
       warmupLoads: { ...exercise.warmupLoads, [bucket]: update.warmupLoad },
@@ -207,7 +204,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const exercise: Exercise = {
       id,
       name: input.name,
-      ...(input.icon ? { icon: input.icon } : {}),
       targets: { home: input.target, gym: input.target },
       warmupReps: input.warmupReps !== undefined ? input.warmupReps : defaultWarmupReps,
       warmupLoads: { home: warmupLoad, gym: warmupLoad },
@@ -230,6 +226,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       id,
       name: input.name,
       type: input.type,
+      ...(input.emoji ? { emoji: input.emoji } : {}),
       structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
       supersets: input.supersets,
     };
@@ -242,6 +239,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       id: workoutId,
       name: input.name,
       type: input.type,
+      ...(input.emoji ? { emoji: input.emoji } : {}),
       structure: { dynamicStretching: input.dynamicStretching, protocol: input.protocol },
       supersets: input.supersets,
     };

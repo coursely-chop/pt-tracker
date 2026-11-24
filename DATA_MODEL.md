@@ -28,7 +28,6 @@ workouts[]    <-- superset structure + protocol, referencing exercise ids only
 id              stable slug, used as the foreign key from workouts[] and progression[]
 name
 targets         { home, gym } — current prescribed load/reps, split by venue (see below)
-icon            string | undefined — key into the curated icon set (`lib/exerciseIconData.ts`); absent means "automatic" (see below)
 cues            string[] of form notes — stored, but no longer shown or editable (see below)
 tags            string[] — freeform (e.g. "legs", "core"), powers the exercise picker's search
 warmup          string | null — free-text warm-up prescription (fallback, see warmupSpec below)
@@ -38,9 +37,9 @@ links           { instructional?, video? } — only populated when the source no
 progression     [] — see below
 ```
 
-### `icon`
+### Exercise icons (derived, not stored)
 
-A string key (e.g. `"sports_martial_arts"`) into `EXERCISE_ICONS` in `lib/exerciseIconData.ts` — 30 Material Icons (Apache 2.0) stored as inline SVG path data rather than pulled in as a package. **Absent means automatic:** `resolveExerciseIcon()` falls back to a default for the exercise's resistance type (`exerciseKind()` — free weight, machine, band, loop band, bodyweight), so every exercise has an icon with no data entered, and an unknown or removed key falls back the same way. Only the key is stored, so adding or swapping icons (e.g. your own drawings) is editing that one file, not migrating data. Like `name`, it's shared across Home and Gym — it identifies the exercise, not a weight.
+An exercise's icon is **computed from its resistance type** (`resolveExerciseIcon()` in `lib/exerciseIcons.ts`): five Material Icons (Apache 2.0) as inline SVG path data in `lib/exerciseIconData.ts`, one each for free weight, machine, band, loop band and bodyweight. Nothing is stored on the exercise, so changing its resistance type changes its icon. (An earlier version stored a per-exercise `icon` key chosen from 30; it was removed — only the resistance-type defaults were ever wanted. Nothing on real data had one set, and a stray `icon` field on an old record is simply ignored.)
 
 ### Hidden details: `cues`, `progressionRule`, `links`, `tags`, `asymmetryNote`
 
@@ -187,6 +186,8 @@ A workout is the superset structure plus the shared protocol (sets, rest periods
 `slots[].exerciseIds` is an array (not a single id) so a slot can hold a primary exercise plus alternates (e.g. tricep-extension/kick-back) — the Workout Builder (PRD §9) reads and writes this array directly, so alternates added or removed there round-trip the same way as the seeded ones.
 
 `type` distinguishes Home Workouts from Gym Workouts (PRD §2/§12) — the only thing it actually changes is whether the free-weight stepper applies `equipment.limitWeightToOwned` (a gym has a full rack, so it never does). Everything else — exercise catalog, builder, protocol, supersets — is identical between the two; `type` is fixed for a workout's lifetime, chosen at creation from which Home Screen tab was active and carried through the builder via `?type=gym`. Set to `"home"` by `loadData()`'s migration for any workout written before this field existed.
+
+`emoji` (optional string) is a single emoji shown beside the workout's name on the Home Screen list and Workout Overview, so a list of text-only titles is easier to tell apart. Absent means none; chosen in the workout builder, from a built-in grid or typed in (only the first emoji in what's typed is kept, via `firstEmoji()` in `lib/workoutEmoji.ts`). Cloning a workout copies it.
 
 ## `completions[]`
 

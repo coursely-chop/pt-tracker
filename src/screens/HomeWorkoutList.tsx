@@ -66,7 +66,14 @@ export default function HomeWorkoutList() {
               className={`workout-card${doneAt ? " workout-card-done" : ""}`}
             >
               <div>
-                <div className="workout-card-name">{workout.name}</div>
+                <div className="workout-card-name">
+                  {workout.emoji && (
+                    <span className="workout-card-emoji" aria-hidden="true">
+                      {workout.emoji}
+                    </span>
+                  )}
+                  {workout.name}
+                </div>
                 <div className="workout-card-meta">
                   {doneAt
                     ? `Last completed today at ${formatTimeOfDay(doneAt)}`

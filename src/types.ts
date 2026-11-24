@@ -125,10 +125,6 @@ export interface Exercise {
   links: ExerciseLinks;
   alternateFor?: string;
   sourceNote?: string;
-  /** Key into the curated icon set (lib/exerciseIconData.ts). Absent means
-   * "automatic": a default picked from the exercise's resistance type. Shared
-   * across Home and Gym, like the name. */
-  icon?: string;
 }
 
 export interface Range {
@@ -167,6 +163,9 @@ export interface Workout {
    * full weight rack — everything else about a workout is identical either
    * way, including which exercises can be used. */
   type: "home" | "gym";
+  /** An optional emoji shown beside the workout's name on the Home Screen, so
+   * a list of text-only titles is easier to tell apart at a glance. */
+  emoji?: string;
   structure: WorkoutStructure;
   supersets: Superset[];
 }

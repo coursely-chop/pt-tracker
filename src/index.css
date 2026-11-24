@@ -199,6 +199,18 @@ body {
   margin-bottom: 4px;
 }
 
+.workout-card-emoji {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 20px;
+  line-height: 1;
+  vertical-align: -2px;
+}
+
+.workout-title-emoji {
+  margin-right: 8px;
+}
+
 .workout-card-meta {
   font-size: 13px;
   color: var(--text-muted);
@@ -1812,67 +1824,6 @@ body {
   opacity: 0.9;
 }
 
-.icon-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.icon-row-label {
-  flex: 1;
-  text-align: left;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.icon-row-action {
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.icon-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.icon-tile .exercise-icon {
-  color: inherit;
-}
-
-.icon-tile.selected {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 12%, transparent);
-}
-
 /* Progress overview */
 
 .settings-fab.progress-fab {
@@ -1949,4 +1900,94 @@ a.progress-row:hover {
 
 .sparkline {
   flex: none;
+}
+
+/* Workout emoji (builder) */
+
+.builder-title-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.builder-title-row .screen-title-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.emoji-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 20px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.emoji-btn.empty {
+  border-style: dashed;
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.emoji-panel {
+  margin: -8px 0 20px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.emoji-tile {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.emoji-tile:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.emoji-tile.selected {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+
+.emoji-custom-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.emoji-custom-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.emoji-clear {
+  flex: none;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }

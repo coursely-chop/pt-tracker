@@ -62,7 +62,6 @@ export default function ExercisePickerSheet({ onClose, onSelect, excludeExercise
             name: update.name,
             target: update.target,
             tags: [],
-            icon: update.icon,
             warmupReps: update.warmupReps,
             warmupLoad: update.warmupLoad,
           });

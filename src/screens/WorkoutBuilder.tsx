@@ -6,6 +6,7 @@ import ExerciseIcon from "../components/ExerciseIcon";
 import { useData } from "../lib/DataContext";
 import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import { homePath } from "../lib/homeTab";
+import { WORKOUT_EMOJI, firstEmoji } from "../lib/workoutEmoji";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
 
 interface BuilderSlot {
@@ -92,6 +93,9 @@ export default function WorkoutBuilder() {
   const workoutTypeLabel = workoutType === "gym" ? "Gym" : "Home";
 
   const [name, setName] = useState(() => existingWorkout?.name ?? "");
+  const [emoji, setEmoji] = useState(() => existingWorkout?.emoji ?? "");
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [customEmoji, setCustomEmoji] = useState("");
   const [supersets, setSupersets] = useState<BuilderSuperset[]>(() =>
     existingWorkout ? toBuilderSupersets(existingWorkout) : [{ key: newKey(), slots: [] }]
   );
@@ -206,6 +210,7 @@ export default function WorkoutBuilder() {
     }));
     const input = {
       name: name.trim(),
+      emoji,
       type: workoutType,
       dynamicStretching: dynamicStretching.trim(),
       protocol,
@@ -242,15 +247,77 @@ export default function WorkoutBuilder() {
       <Link to={backTo} className="back-link">
         {backLabel}
       </Link>
-      <input
-        type="text"
-        className="screen-title screen-title-input"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={`New ${workoutTypeLabel} Workout`}
-        aria-label="Workout name"
-        autoFocus={!isEditing}
-      />
+      <div className="builder-title-row">
+        <button
+          type="button"
+          className={`emoji-btn${emoji ? "" : " empty"}`}
+          onClick={() => setEmojiOpen((open) => !open)}
+          aria-label={emoji ? `Workout emoji: ${emoji}. Change` : "Add a workout emoji"}
+          aria-expanded={emojiOpen}
+        >
+          {emoji || "+"}
+        </button>
+        <input
+          type="text"
+          className="screen-title screen-title-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`New ${workoutTypeLabel} Workout`}
+          aria-label="Workout name"
+          autoFocus={!isEditing}
+        />
+      </div>
+      {emojiOpen && (
+        <div className="emoji-panel">
+          <div className="emoji-grid">
+            {WORKOUT_EMOJI.map((e) => (
+              <button
+                key={e}
+                type="button"
+                className={`emoji-tile${emoji === e ? " selected" : ""}`}
+                onClick={() => {
+                  setEmoji(e);
+                  setEmojiOpen(false);
+                }}
+                aria-label={e}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <div className="emoji-custom-row">
+            <input
+              type="text"
+              className="detail-input emoji-custom-input"
+              value={customEmoji}
+              onChange={(e) => {
+                const picked = firstEmoji(e.target.value);
+                if (picked) {
+                  setEmoji(picked);
+                  setCustomEmoji("");
+                  setEmojiOpen(false);
+                } else {
+                  setCustomEmoji(e.target.value.slice(0, 2));
+                }
+              }}
+              placeholder="Or type any emoji"
+              aria-label="Type any emoji"
+            />
+            {emoji && (
+              <button
+                type="button"
+                className="emoji-clear"
+                onClick={() => {
+                  setEmoji("");
+                  setEmojiOpen(false);
+                }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {supersets.map((superset, si) => (
         <div key={superset.key} className="builder-superset">
