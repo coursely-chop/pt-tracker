@@ -1,12 +1,42 @@
-/** Emoji offered when picking a workout's marker — a mix of activity, body
- * part, and plain "something to tell these apart" shapes. Deliberately leaves
- * out 💪, which the Home Screen already uses as the "done today" badge. Any
- * other emoji can still be typed in. */
-export const WORKOUT_EMOJI = [
-  "🏋️", "🏃", "🚴", "🧘", "🤸", "🥾", "🏊", "🥊",
-  "🦵", "🍑", "🦶", "🫀", "🔥", "⚡", "🎯", "🚀",
-  "☀️", "🌅", "🌙", "🏠", "🏢", "⭐", "🌲", "🪨",
-  "🦍", "🐻", "🦁", "🐢", "🐇", "🍀", "🧱", "🛠️",
+export interface EmojiGroup {
+  label: string;
+  emoji: string[];
+}
+
+/** Emoji offered when picking a workout's marker, grouped so a longer list
+ * stays scannable. Colored circles and squares are in on purpose — the point
+ * is telling workouts apart at a glance, and a color does that as well as a
+ * picture. Deliberately leaves out 💪, which the Home Screen already uses as
+ * the "done today" badge. Any other emoji can still be typed in. */
+export const WORKOUT_EMOJI_GROUPS: EmojiGroup[] = [
+  {
+    label: "Activity",
+    emoji: ["🏋️", "🏃", "🚴", "🧘", "🤸", "🥾", "🏊", "🥊", "🤼", "🧗", "🏄", "🚣", "🤾", "⛹️", "🏌️", "🥋", "🎿", "🏂", "🏓", "🏸", "⚽", "🏀", "🎾", "🏈"],
+  },
+  {
+    label: "Body",
+    emoji: ["🦵", "🦶", "🍑", "🫀", "🫁", "🧠", "🦴", "🦾", "🦿", "✊", "👊", "🖐️", "👣", "👀"],
+  },
+  {
+    label: "Colors",
+    emoji: ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "⚪", "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "⬛", "⬜"],
+  },
+  {
+    label: "Energy",
+    emoji: ["🔥", "⚡", "💥", "🎯", "🚀", "⏱️", "⏰", "🌅", "☀️", "🌙", "⭐", "🌈", "❄️", "💧", "🌊", "🌪️"],
+  },
+  {
+    label: "Animals",
+    emoji: ["🦍", "🐻", "🦁", "🐢", "🐇", "🐺", "🦅", "🐎", "🐅", "🐆", "🦈", "🐘", "🦏", "🐂", "🦌", "🐝"],
+  },
+  {
+    label: "Nature & food",
+    emoji: ["🌲", "🍀", "🌵", "🌴", "🌻", "🪨", "🍎", "🍌", "🥑", "🥩", "🥚", "☕", "🍕", "🌶️"],
+  },
+  {
+    label: "Things",
+    emoji: ["🏠", "🏢", "🧱", "🛠️", "🔧", "⚙️", "🏆", "🥇", "🎧", "🎵", "📈", "🔑", "🧲", "💎", "🛡️", "⚔️"],
+  },
 ];
 
 // One emoji "character": a pictograph plus any variation selector, skin tone,

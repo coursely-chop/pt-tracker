@@ -6,7 +6,7 @@ import ExerciseIcon from "../components/ExerciseIcon";
 import { useData } from "../lib/DataContext";
 import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import { homePath } from "../lib/homeTab";
-import { WORKOUT_EMOJI, firstEmoji } from "../lib/workoutEmoji";
+import { WORKOUT_EMOJI_GROUPS, firstEmoji } from "../lib/workoutEmoji";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
 
 interface BuilderSlot {
@@ -269,20 +269,27 @@ export default function WorkoutBuilder() {
       </div>
       {emojiOpen && (
         <div className="emoji-panel">
-          <div className="emoji-grid">
-            {WORKOUT_EMOJI.map((e) => (
-              <button
-                key={e}
-                type="button"
-                className={`emoji-tile${emoji === e ? " selected" : ""}`}
-                onClick={() => {
-                  setEmoji(e);
-                  setEmojiOpen(false);
-                }}
-                aria-label={e}
-              >
-                {e}
-              </button>
+          <div className="emoji-scroll">
+            {WORKOUT_EMOJI_GROUPS.map((group) => (
+              <div key={group.label}>
+                <div className="emoji-group-label">{group.label}</div>
+                <div className="emoji-grid">
+                  {group.emoji.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      className={`emoji-tile${emoji === e ? " selected" : ""}`}
+                      onClick={() => {
+                        setEmoji(e);
+                        setEmojiOpen(false);
+                      }}
+                      aria-label={e}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
           <div className="emoji-custom-row">
