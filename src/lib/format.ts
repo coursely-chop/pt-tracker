@@ -73,12 +73,13 @@ const GYM_WARMUP_WEIGHTS = [3, ...Array.from({ length: 60 }, (_, i) => (i + 1) *
  * it computes to bodyweight too rather than needing a special case.
  *
  * `isGym` matters because a machine or gym free weight isn't owned equipment
- * at all — snapping a gym warmup to *home* dumbbells/bands (what this used to
- * do unconditionally) picked whatever you happen to own at home, regardless
- * of what the gym actually has. In gym mode, free weight and band/loop-band
- * warmups round to a plain number or search the full color catalog instead of
- * owned equipment — the same "no home-equipment restriction" gym already gets
- * on the working-set stepper (see GymModeContext in EditModeSheet.tsx). */
+ * at all — snapping a gym warmup to *home* dumbbells (what this used to do
+ * unconditionally) picked whatever you happen to own at home, regardless of
+ * what the gym actually has. Gym free-weight warmups pick from a standard
+ * ladder (see GYM_WARMUP_WEIGHTS) and gym loop-band warmups search all three
+ * strengths instead of owned equipment — and so does a home warmup when
+ * "limit to equipment I own" is off, since then there's no owned list at all.
+ */
 export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym: boolean): Load {
   if (!load || load.kind === "bodyweight") return { kind: "bodyweight" };
   if (load.kind === "machine") {
@@ -88,8 +89,11 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym
     const lbs = Math.max(0, roundTo(load.lbs * 0.625, load.increment));
     return lbs > 0 ? { kind: "machine", lbs, increment: load.increment } : { kind: "bodyweight" };
   }
+  // A gym has a full rack, and with "limit to equipment I own" off there's no
+  // list of owned weights to pick from either — both just pick a standard step.
+  const unrestricted = isGym || !equipment.limitWeightToOwned;
   if (load.kind === "freeWeight") {
-    if (isGym) {
+    if (unrestricted) {
       const lbs = pickWarmupWeight(load.lbs, GYM_WARMUP_WEIGHTS);
       return lbs > 0 ? { kind: "freeWeight", lbs } : { kind: "bodyweight" };
     }
@@ -101,7 +105,7 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym
     return lbs > 0 ? { kind: "freeWeight", lbs } : { kind: "bodyweight" };
   }
   if (load.kind === "loopBand") {
-    const catalog = isGym ? LOOP_BAND_STRENGTHS : equipment.ownedLoopBands;
+    const catalog = unrestricted ? LOOP_BAND_STRENGTHS : equipment.ownedLoopBands;
     const strengths = pickWarmupLoopBand(load.strengths, catalog);
     return strengths.length > 0 ? { kind: "loopBand", strengths: strengths as LoopBandLoad["strengths"] } : { kind: "bodyweight" };
   }

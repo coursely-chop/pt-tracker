@@ -75,7 +75,7 @@ function WeightList({ label, singularLabel, hint, emptyText, weights, onAdd, onR
  * localStorage-only app with no backend. Restoring reloads the page rather
  * than threading the new data through every context setter, since it's a
  * rare, all-or-nothing action anyway. */
-function BackupRestore() {
+export function BackupRestore() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
@@ -140,12 +140,12 @@ function BackupRestore() {
   );
 }
 
-/** What's actually in the closet — feeds the computed warmup suggestion
- * (Movement Detail's Warmup section) rather than restricting what you can
- * set as a working target, which stays free-form on purpose. Rarely edited:
- * once when this screen first exists, then only when equipment changes —
- * see the "+ Add ... to your equipment" prompt in Edit Mode for the more
- * common way a new dumbbell weight actually gets added here.
+/** Home equipment — hidden entirely unless "Limit the weight stepper to
+ * equipment I own" is on, since that's the only thing the lists do: with it
+ * off, the home stepper offers any weight and warmups round to a standard
+ * step like the gym's, so there'd be nothing for a list of what you own to
+ * feed. Still rarely edited — see the "+ Add ... to your equipment" prompt in
+ * Edit Mode for the more common way a new dumbbell weight gets added.
  *
  * No screen chrome of its own (back link, title) — it's embedded as a
  * section of the Settings screen rather than reached as its own route. */
@@ -161,9 +161,8 @@ export default function EquipmentSection() {
   } = useData();
 
   return (
-    <>
-      <p className="hint-box screen-intro">Add your home equipment to enable warmup suggestion for home workouts.</p>
-
+    <div className="detail-section">
+      <div className="detail-section-label">Equipment</div>
       <label className="toggle-row">
         <input
           type="checkbox"
@@ -172,52 +171,58 @@ export default function EquipmentSection() {
         />
         Limit the weight stepper to equipment I own
       </label>
-
-      <WeightList
-        label="Dumbbells"
-        singularLabel="Dumbbell"
-        hint={'Assumed to come in pairs — enter the weight of one (e.g. a 10 lb pair is just "10"), not the total.'}
-        emptyText="No dumbbells added yet."
-        weights={equipment.ownedDumbbells}
-        onAdd={addOwnedDumbbell}
-        onRemove={removeOwnedDumbbell}
-      />
-
-      <WeightList
-        label="Kettlebells"
-        singularLabel="Kettlebell"
-        hint="Counted individually, not assumed to be pairs like dumbbells."
-        emptyText="No kettlebells added yet."
-        weights={equipment.ownedKettlebells}
-        onAdd={addOwnedKettlebell}
-        onRemove={removeOwnedKettlebell}
-      />
-
-      <div className="detail-section">
-        <div className="detail-section-label">Loop Bands</div>
-        <div className="detail-hint">
-          Closed-loop bands, worn one at a time (e.g. for lateral band walks). Tap the ones you own.
-        </div>
-        <div className="band-picker">
-          {LOOP_BAND_STRENGTHS.map((strength) => {
-            const owned = equipment.ownedLoopBands.includes(strength);
-            return (
-              <button
-                key={strength}
-                type="button"
-                className={`band-swatch${owned ? " selected" : ""}`}
-                style={{ backgroundColor: LOOP_BAND_HEX[strength] }}
-                onClick={() => toggleOwnedLoopBand(strength)}
-                aria-pressed={owned}
-                aria-label={`${strength} loop band${owned ? ", owned" : ""}`}
-                title={capitalize(strength)}
-              />
-            );
-          })}
-        </div>
+      <div className="detail-hint">
+        On: home workouts only offer the weights you own, and home warmups pick from them. Off: any weight, with
+        warmups rounded to a standard step. Gym workouts never use this.
       </div>
 
-      <BackupRestore />
-    </>
+      {equipment.limitWeightToOwned && (
+        <>
+          <WeightList
+            label="Dumbbells"
+            singularLabel="Dumbbell"
+            hint={'Assumed to come in pairs — enter the weight of one (e.g. a 10 lb pair is just "10"), not the total.'}
+            emptyText="No dumbbells added yet."
+            weights={equipment.ownedDumbbells}
+            onAdd={addOwnedDumbbell}
+            onRemove={removeOwnedDumbbell}
+          />
+
+          <WeightList
+            label="Kettlebells"
+            singularLabel="Kettlebell"
+            hint="Counted individually, not assumed to be pairs like dumbbells."
+            emptyText="No kettlebells added yet."
+            weights={equipment.ownedKettlebells}
+            onAdd={addOwnedKettlebell}
+            onRemove={removeOwnedKettlebell}
+          />
+
+          <div className="detail-section">
+            <div className="detail-section-label">Loop Bands</div>
+            <div className="detail-hint">
+              Closed-loop bands, worn one at a time (e.g. for lateral band walks). Tap the ones you own.
+            </div>
+            <div className="band-picker">
+              {LOOP_BAND_STRENGTHS.map((strength) => {
+                const owned = equipment.ownedLoopBands.includes(strength);
+                return (
+                  <button
+                    key={strength}
+                    type="button"
+                    className={`band-swatch${owned ? " selected" : ""}`}
+                    style={{ backgroundColor: LOOP_BAND_HEX[strength] }}
+                    onClick={() => toggleOwnedLoopBand(strength)}
+                    aria-pressed={owned}
+                    aria-label={`${strength} loop band${owned ? ", owned" : ""}`}
+                    title={capitalize(strength)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
