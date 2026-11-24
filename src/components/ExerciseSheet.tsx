@@ -10,12 +10,15 @@ import {
   convertLoad,
   formatLoadPreview,
 } from "./LoadControls";
+import ExerciseIcon from "./ExerciseIcon";
+import { EXERCISE_ICONS, defaultIconKey, iconByKey } from "../lib/exerciseIcons";
 import { computeWarmupLoad, localDateISO } from "../lib/format";
 import { useData, type ExerciseUpdate } from "../lib/DataContext";
 import type { Exercise, ExerciseTarget, Load, ProgressionEntry, SideTarget, WarmupOverride } from "../types";
 
 interface FormState {
   name: string;
+  icon: string | undefined;
   asymmetric: boolean;
   reps: number;
   load: Load;
@@ -84,6 +87,7 @@ function buildInitialState(
 
   return {
     name: exercise.name,
+    icon: exercise.icon,
     asymmetric,
     reps,
     load: cloneLoad(target.load ?? BODYWEIGHT),
@@ -147,6 +151,8 @@ export default function ExerciseSheet({ exercise, isGym, isNew = false, onSave, 
   const [initialSnapshot] = useState(() => stable(init));
 
   const [name, setName] = useState(init.name);
+  const [icon, setIcon] = useState<string | undefined>(init.icon);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [asymmetric, setAsymmetric] = useState(init.asymmetric);
   const [reps, setReps] = useState(init.reps);
   const [load, setLoad] = useState<Load>(init.load);
@@ -172,6 +178,7 @@ export default function ExerciseSheet({ exercise, isGym, isNew = false, onSave, 
   const isDirty =
     stable({
       name,
+      icon,
       asymmetric,
       reps,
       load,
@@ -187,6 +194,10 @@ export default function ExerciseSheet({ exercise, isGym, isNew = false, onSave, 
       warmupOverrideRightLoad,
     }) !== initialSnapshot;
   const canSave = name.trim().length > 0;
+  // With no icon picked, show (and offer) the default for whatever resistance
+  // type is currently selected, so it follows the dropdown below.
+  const autoIcon = iconByKey(defaultIconKey(asymmetric ? leftLoad.kind : load.kind));
+  const shownIcon = icon ? iconByKey(icon) : autoIcon;
 
   function requestClose() {
     if (isDirty) setConfirmingDiscard(true);
@@ -273,6 +284,7 @@ export default function ExerciseSheet({ exercise, isGym, isNew = false, onSave, 
 
     onSave({
       name: name.trim(),
+      icon,
       target,
       // History records weight/reps changes only — renaming, or tweaking just
       // the warmup, shouldn't add a point to the chart. A new exercise has no
@@ -325,6 +337,47 @@ export default function ExerciseSheet({ exercise, isGym, isNew = false, onSave, 
           </div>
           <div className="detail-hint sheet-scope-hint">
             Weights and warmup below are for {isGym ? "Gym" : "Home"} workouts only.
+          </div>
+
+          <div className="edit-mode-section">
+            <button
+              type="button"
+              className="icon-row"
+              onClick={() => setIconPickerOpen((open) => !open)}
+              aria-expanded={iconPickerOpen}
+            >
+              <ExerciseIcon icon={shownIcon} size={26} />
+              <span className="icon-row-label">Icon{icon ? "" : " (automatic)"}</span>
+              <span className="icon-row-action">{iconPickerOpen ? "Done" : "Change"}</span>
+            </button>
+            {iconPickerOpen && (
+              <div className="icon-grid" role="listbox" aria-label="Exercise icon">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={icon === undefined}
+                  className={`icon-tile icon-tile-auto${icon === undefined ? " selected" : ""}`}
+                  onClick={() => setIcon(undefined)}
+                >
+                  <ExerciseIcon icon={autoIcon} size={24} />
+                  <span>Auto</span>
+                </button>
+                {EXERCISE_ICONS.map((def) => (
+                  <button
+                    key={def.key}
+                    type="button"
+                    role="option"
+                    aria-selected={icon === def.key}
+                    aria-label={def.label}
+                    title={def.label}
+                    className={`icon-tile${icon === def.key ? " selected" : ""}`}
+                    onClick={() => setIcon(def.key)}
+                  >
+                    <ExerciseIcon icon={def} size={24} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="edit-mode-section">

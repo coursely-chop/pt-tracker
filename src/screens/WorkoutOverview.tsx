@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
 import { formatDate, getWarmupLines, getWorkingLines, localDateISO, todayISO } from "../lib/format";
+import ExerciseIcon from "../components/ExerciseIcon";
 import { useData } from "../lib/DataContext";
+import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import { homePath } from "../lib/homeTab";
 
 export default function WorkoutOverview() {
@@ -119,7 +121,8 @@ export default function WorkoutOverview() {
                     return (
                       <div key={exerciseId} className="slot-card">
                         <Link to={`/workouts/${workout.id}/exercises/${exerciseId}`} className="exercise-name">
-                          {exercise.name}
+                          <ExerciseIcon icon={resolveExerciseIcon(exercise, workout.type)} size={20} className="exercise-name-icon" />
+                          <span>{exercise.name}</span>
                         </Link>
                         <button
                           type="button"

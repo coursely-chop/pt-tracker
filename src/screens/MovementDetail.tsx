@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
 import { formatDate, getWarmupLines, getWorkingLines } from "../lib/format";
 import { notesForExercise } from "../lib/notes";
+import ExerciseIcon from "../components/ExerciseIcon";
 import { useData } from "../lib/DataContext";
+import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import type { Note } from "../types";
 
 const SWIPE_THRESHOLD_PX = 60;
@@ -199,7 +201,10 @@ export default function MovementDetail() {
 
       <div key={exercise.id} className={`movement-content slide-${direction}`}>
         <div className="movement-header">
-          <h1 className="screen-title">{exercise.name}</h1>
+          <h1 className="screen-title movement-title">
+            <ExerciseIcon icon={resolveExerciseIcon(exercise, workout.type)} size={26} className="movement-title-icon" />
+            <span>{exercise.name}</span>
+          </h1>
           <div className="swipe-cluster">
             <button
               type="button"

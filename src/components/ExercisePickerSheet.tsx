@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
+import ExerciseIcon from "./ExerciseIcon";
 import ExerciseSheet, { makeDraftExercise } from "./ExerciseSheet";
 import { GymModeContext } from "./LoadControls";
+import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import { searchExercises } from "../lib/exerciseSearch";
 import { useBodyScrollLock } from "../lib/useBodyScrollLock";
 import { useData } from "../lib/DataContext";
@@ -60,6 +62,7 @@ export default function ExercisePickerSheet({ onClose, onSelect, excludeExercise
             name: update.name,
             target: update.target,
             tags: [],
+            icon: update.icon,
             warmupReps: update.warmupReps,
             warmupLoad: update.warmupLoad,
           });
@@ -104,6 +107,7 @@ export default function ExercisePickerSheet({ onClose, onSelect, excludeExercise
                   <span className="picker-check" aria-hidden="true">
                     {isSelected ? "✓" : ""}
                   </span>
+                  <ExerciseIcon icon={resolveExerciseIcon(exercise, isGym ? "gym" : "home")} size={22} className="picker-item-icon" />
                   <span className="picker-item-text">
                     <div className="picker-item-name">{exercise.name}</div>
                     {alreadyAdded ? (

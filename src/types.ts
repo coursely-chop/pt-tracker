@@ -125,6 +125,10 @@ export interface Exercise {
   links: ExerciseLinks;
   alternateFor?: string;
   sourceNote?: string;
+  /** Key into the curated icon set (lib/exerciseIconData.ts). Absent means
+   * "automatic": a default picked from the exercise's resistance type. Shared
+   * across Home and Gym, like the name. */
+  icon?: string;
 }
 
 export interface Range {

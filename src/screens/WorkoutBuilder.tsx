@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ExercisePickerSheet from "../components/ExercisePickerSheet";
 import { GymModeContext, Stepper } from "../components/LoadControls";
+import ExerciseIcon from "../components/ExerciseIcon";
 import { useData } from "../lib/DataContext";
+import { resolveExerciseIcon } from "../lib/exerciseIcons";
 import { homePath } from "../lib/homeTab";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
 
@@ -292,7 +294,10 @@ export default function WorkoutBuilder() {
             return (
               <div key={slot.key} className="builder-slot-group">
                 <div className="builder-slot-row">
-                  <div className="builder-slot-name">{exercise?.name ?? "Unknown exercise"}</div>
+                  <div className="builder-slot-name">
+                    {exercise && <ExerciseIcon icon={resolveExerciseIcon(exercise, workoutType)} size={18} className="builder-slot-icon" />}
+                    <span>{exercise?.name ?? "Unknown exercise"}</span>
+                  </div>
                   <div className="builder-slot-controls">
                     <div className="swipe-cluster">
                       <button

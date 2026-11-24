@@ -43,6 +43,8 @@ export interface ExerciseUpdate {
   entries: ProgressionEntry[];
   warmupLoad: WarmupOverride;
   warmupReps: Exercise["warmupReps"];
+  /** Undefined clears a picked icon back to automatic. */
+  icon: string | undefined;
 }
 
 export interface NewExerciseInput {
@@ -59,6 +61,7 @@ export interface NewExerciseInput {
    * configured directly, rather than always deriving it. */
   warmupReps?: number | null;
   warmupLoad?: WarmupOverride;
+  icon?: string;
 }
 
 export interface NewWorkoutInput {
@@ -178,6 +181,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updated: Exercise = {
       ...exercise,
       name: update.name,
+      icon: update.icon,
       targets: { ...exercise.targets, [bucket]: update.target },
       progression: [...exercise.progression.filter((p) => !superseded(p)), ...update.entries],
       warmupLoads: { ...exercise.warmupLoads, [bucket]: update.warmupLoad },
@@ -203,6 +207,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const exercise: Exercise = {
       id,
       name: input.name,
+      ...(input.icon ? { icon: input.icon } : {}),
       targets: { home: input.target, gym: input.target },
       warmupReps: input.warmupReps !== undefined ? input.warmupReps : defaultWarmupReps,
       warmupLoads: { home: warmupLoad, gym: warmupLoad },

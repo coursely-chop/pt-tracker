@@ -28,6 +28,7 @@ workouts[]    <-- superset structure + protocol, referencing exercise ids only
 id              stable slug, used as the foreign key from workouts[] and progression[]
 name
 targets         { home, gym } — current prescribed load/reps, split by venue (see below)
+icon            string | undefined — key into the curated icon set (`lib/exerciseIconData.ts`); absent means "automatic" (see below)
 cues            string[] of form notes — stored, but no longer shown or editable (see below)
 tags            string[] — freeform (e.g. "legs", "core"), powers the exercise picker's search
 warmup          string | null — free-text warm-up prescription (fallback, see warmupSpec below)
@@ -36,6 +37,10 @@ progressionRule string | null — the trainer's rule for when/how much to increa
 links           { instructional?, video? } — only populated when the source note had a URL
 progression     [] — see below
 ```
+
+### `icon`
+
+A string key (e.g. `"sports_martial_arts"`) into `EXERCISE_ICONS` in `lib/exerciseIconData.ts` — 30 Material Icons (Apache 2.0) stored as inline SVG path data rather than pulled in as a package. **Absent means automatic:** `resolveExerciseIcon()` falls back to a default for the exercise's resistance type (`exerciseKind()` — free weight, machine, band, loop band, bodyweight), so every exercise has an icon with no data entered, and an unknown or removed key falls back the same way. Only the key is stored, so adding or swapping icons (e.g. your own drawings) is editing that one file, not migrating data. Like `name`, it's shared across Home and Gym — it identifies the exercise, not a weight.
 
 ### Hidden details: `cues`, `progressionRule`, `links`, `tags`, `asymmetryNote`
 
