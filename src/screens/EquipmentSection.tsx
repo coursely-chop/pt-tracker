@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { Stepper, buildWeightSequence } from "../components/EditModeSheet";
-import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
+import { LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
 import { capitalize, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
 import { exportDataAsJson, restoreDataFromJson } from "../lib/storage";
@@ -156,7 +156,6 @@ export default function EquipmentSection() {
     removeOwnedDumbbell,
     addOwnedKettlebell,
     removeOwnedKettlebell,
-    toggleOwnedBand,
     toggleOwnedLoopBand,
     setLimitWeightToOwned,
   } = useData();
@@ -195,32 +194,9 @@ export default function EquipmentSection() {
       />
 
       <div className="detail-section">
-        <div className="detail-section-label">Tube Bands</div>
-        <div className="detail-hint">Tap to mark which resistance bands you actually own.</div>
-        <div className="band-picker">
-          {BAND_COLORS.map((color) => {
-            const owned = equipment.ownedBands.includes(color);
-            return (
-              <button
-                key={color}
-                type="button"
-                className={`band-swatch${owned ? " selected" : ""}`}
-                style={{ backgroundColor: BAND_HEX[color] }}
-                onClick={() => toggleOwnedBand(color)}
-                aria-pressed={owned}
-                aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs${owned ? ", owned" : ""}`}
-                title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="detail-section">
         <div className="detail-section-label">Loop Bands</div>
         <div className="detail-hint">
-          Closed-loop bands, worn one at a time (e.g. for lateral band walks) — a separate set from the tube bands
-          above, even where a color name repeats.
+          Closed-loop bands, worn one at a time (e.g. for lateral band walks). Tap the ones you own.
         </div>
         <div className="band-picker">
           {LOOP_BAND_STRENGTHS.map((strength) => {

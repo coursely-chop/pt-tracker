@@ -1,5 +1,5 @@
 import seedData from "../data/seed-data.json";
-import { BAND_COLORS, DEFAULT_OWNED_DUMBBELLS, DEFAULT_OWNED_KETTLEBELLS, DEFAULT_OWNED_LOOP_BANDS } from "./equipment";
+import { DEFAULT_OWNED_DUMBBELLS, DEFAULT_OWNED_KETTLEBELLS, DEFAULT_OWNED_LOOP_BANDS } from "./equipment";
 import type { Equipment, Exercise, Note, Profile, SeedData, Workout, WorkoutCompletion } from "../types";
 
 /** Workout shape before home/gym existed — every workout was implicitly a
@@ -16,7 +16,6 @@ interface LegacyEquipment {
   ownedFreeWeights?: number[];
   ownedDumbbells?: number[];
   ownedKettlebells?: number[];
-  ownedBands?: string[];
   ownedLoopBands?: string[];
   limitWeightToOwned?: boolean;
 }
@@ -105,6 +104,32 @@ interface LegacyExerciseFields {
   targets?: Exercise["targets"];
 }
 
+/** What each tube-band color weighed, from when bands were picked by color
+ * and summed. Kept only so older snapshots (and a stale copy on another
+ * device that hasn't updated yet) can be converted to a plain lbs number. */
+const LEGACY_BAND_WEIGHTS: Record<string, number> = { yellow: 10, blue: 20, green: 30, black: 40, red: 50 };
+
+/** Rewrites every tube-band load found anywhere inside `value` — working
+ * targets, either side, warmup overrides, history entries — from the old
+ * `{ bands: [colors], overrideLbs? }` shape to `{ lbs }`. Runs on every load
+ * and accepts both shapes, since an old-shaped copy can arrive at any time
+ * (a phone still on the previous version pushing to the cloud). */
+function convertBandLoads(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(convertBandLoads);
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (obj.kind === "band") {
+      if (typeof obj.lbs === "number") return { kind: "band", lbs: obj.lbs };
+      const colors = Array.isArray(obj.bands) ? (obj.bands as string[]) : [];
+      const summed = colors.reduce((total, c) => total + (LEGACY_BAND_WEIGHTS[c] ?? 0), 0);
+      const lbs = typeof obj.overrideLbs === "number" ? obj.overrideLbs : summed;
+      return { kind: "band", lbs: lbs > 0 ? lbs : 10 };
+    }
+    return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, convertBandLoads(v)]));
+  }
+  return value;
+}
+
 /** Migration-safe: older snapshots (local or cloud) predate the
  * completions/notes fields, older exercises predate the per-exercise tags
  * field, and older exercises still carry warmup as free text and/or
@@ -135,7 +160,7 @@ function migrate(parsed: Partial<SeedData>): SeedData {
           ? legacy.warmupReps
           : (legacy.warmupSpec?.reps ?? seedDefault?.warmupReps ?? null);
       const { target: _target, warmupLoad: _warmupLoad, ...restWithoutLegacyFields } = rest;
-      return {
+      return convertBandLoads({
         ...restWithoutLegacyFields,
         tags: legacy.tags ?? [],
         warmupReps,
@@ -145,13 +170,13 @@ function migrate(parsed: Partial<SeedData>): SeedData {
         // — cast rather than threading `| undefined` through just for that.
         targets: legacy.targets ?? ({ home: legacy.target, gym: legacy.target } as Exercise["targets"]),
         warmupLoads: legacy.warmupLoads ?? { home: legacy.warmupLoad ?? null, gym: legacy.warmupLoad ?? null },
-      };
+      }) as Exercise;
     }),
     workouts: (parsed.workouts ?? []).map((w) => ({ ...w, type: (w as Workout & LegacyWorkout).type ?? "home" })),
     completions: parsed.completions ?? [],
     notes: parsed.notes ?? [],
     // Predates the Equipment screen (or predates the dumbbell/kettlebell split
-    // within it) — defaults match what pickWarmupWeight/pickWarmupBand already
+    // within it) — defaults match what pickWarmupWeight already
     // assumed before there was a setting for it, so this migration doesn't
     // change anyone's computed warmup results.
     equipment: ((): Equipment => {
@@ -159,7 +184,6 @@ function migrate(parsed: Partial<SeedData>): SeedData {
       return {
         ownedDumbbells: legacy?.ownedDumbbells ?? legacy?.ownedFreeWeights ?? DEFAULT_OWNED_DUMBBELLS,
         ownedKettlebells: legacy?.ownedKettlebells ?? DEFAULT_OWNED_KETTLEBELLS,
-        ownedBands: legacy?.ownedBands ?? [...BAND_COLORS],
         ownedLoopBands: legacy?.ownedLoopBands ?? DEFAULT_OWNED_LOOP_BANDS,
         limitWeightToOwned: legacy?.limitWeightToOwned ?? true,
       };

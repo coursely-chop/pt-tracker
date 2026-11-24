@@ -3,15 +3,14 @@ export interface FreeWeightLoad {
   lbs: number;
 }
 
+/** A tube band, by total resistance in lbs — no colors. Originally bands
+ * were picked by color from a fixed five-color catalog and summed; that
+ * stopped working once higher-resistance bands arrived in the same colors,
+ * so resistance is now the only thing recorded. Stepped in 10 lb increments
+ * in the editor, but any number is storable (older values like 65 are kept). */
 export interface BandLoad {
   kind: "band";
-  bands: string[];
-  /** Direct total-resistance override in lbs, bypassing the bands[] color
-   * lookup entirely — for a band set whose color-to-weight doesn't match
-   * this app's own fixed catalog (e.g. a trainer's or gym's own bands).
-   * `bands[]` is kept (usually empty) rather than cleared so a color
-   * selection isn't lost if the override is later turned back off. */
-  overrideLbs?: number;
+  lbs: number;
 }
 
 export interface BodyweightLoad {
@@ -197,7 +196,7 @@ export interface Note {
 
 /**
  * What's actually sitting in the closet — feeds the warmup computation in
- * lib/equipment.ts (pickWarmupWeight/pickWarmupBand). Doesn't restrict what
+ * lib/equipment.ts (pickWarmupWeight/pickWarmupLoopBand). Doesn't restrict what
  * you can dial in for a *working* target: that stays free-form, since a
  * working weight can be anything and shouldn't be capped by what's already
  * on file. Dumbbells and kettlebells are tracked as separate lists (each just
@@ -206,18 +205,14 @@ export interface Note {
  * entry means one. For warmup-picking purposes the distinction doesn't
  * matter — either is just a weight you can grab — so pickWarmupWeight is
  * given the two lists merged; the split only matters for how Equipment
- * Settings displays and labels them. Bands are a subset of the fixed
- * BAND_WEIGHTS catalog in lib/equipment.ts (color-to-weight is physical, not
- * user-configurable — only *which* colors you own is). Loop bands are a
- * separate, smaller catalog (light/moderate/strong) tracked the same way —
- * kept apart from ownedBands since they're a physically different kind of
- * band (closed loop, one worn at a time) even though "blue" and "black"
- * happen to name a color in both catalogs.
+ * Settings displays and labels them. Tube bands aren't tracked as equipment
+ * at all anymore (they're picked by resistance in lbs, not by owned color).
+ * Loop bands are a small catalog (light/moderate/strong) tracked here since
+ * they still have no lbs value to enter directly.
  */
 export interface Equipment {
   ownedDumbbells: number[];
   ownedKettlebells: number[];
-  ownedBands: string[];
   ownedLoopBands: string[];
   /** When true (the default), the free-weight stepper in Edit Mode and New
    * Exercise only walks owned dumbbell/kettlebell values instead of the

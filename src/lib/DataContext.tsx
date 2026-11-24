@@ -117,7 +117,6 @@ interface DataContextValue {
   removeOwnedDumbbell: (lbs: number) => void;
   addOwnedKettlebell: (lbs: number) => void;
   removeOwnedKettlebell: (lbs: number) => void;
-  toggleOwnedBand: (color: string) => void;
   toggleOwnedLoopBand: (strength: string) => void;
   setLimitWeightToOwned: (limit: boolean) => void;
   setProfileName: (name: string) => void;
@@ -352,12 +351,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(saveEquipment({ ...data.equipment, ownedKettlebells }));
   }
 
-  function toggleOwnedBand(color: string) {
-    const owned = data.equipment.ownedBands;
-    const ownedBands = owned.includes(color) ? owned.filter((c) => c !== color) : [...owned, color];
-    setData(saveEquipment({ ...data.equipment, ownedBands }));
-  }
-
   function toggleOwnedLoopBand(strength: string) {
     const owned = data.equipment.ownedLoopBands;
     const ownedLoopBands = owned.includes(strength) ? owned.filter((s) => s !== strength) : [...owned, strength];
@@ -404,7 +397,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     removeOwnedDumbbell,
     addOwnedKettlebell,
     removeOwnedKettlebell,
-    toggleOwnedBand,
     toggleOwnedLoopBand,
     setLimitWeightToOwned,
     setProfileName,

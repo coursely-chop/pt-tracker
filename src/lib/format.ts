@@ -1,13 +1,4 @@
-import {
-  BAND_COLORS,
-  BAND_HEX,
-  LOOP_BAND_HEX,
-  LOOP_BAND_STRENGTHS,
-  computeBandWeight,
-  pickWarmupBand,
-  pickWarmupLoopBand,
-  pickWarmupWeight,
-} from "./equipment";
+import { LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, pickWarmupLoopBand, pickWarmupWeight } from "./equipment";
 import type { Equipment, Exercise, ExerciseTarget, Load, LoopBandLoad } from "../types";
 
 export function capitalize(s: string): string {
@@ -47,10 +38,7 @@ function loadToRow(load: Load | null): { text: string; swatches: string[] } {
     const label = load.strengths.map(capitalize).join(" + ");
     return { text: label || "—", swatches: load.strengths.map((s) => LOOP_BAND_HEX[s]) };
   }
-  // A direct resistance override has no colors behind it — nothing to render as dots.
-  if (load.overrideLbs != null) return { text: `${load.overrideLbs} lbs`, swatches: [] };
-  const weight = computeBandWeight(load.bands);
-  return { text: weight > 0 ? `${weight} lbs` : "—", swatches: load.bands.map((color) => BAND_HEX[color]) };
+  return { text: `${load.lbs} lbs`, swatches: [] };
 }
 
 export function getWorkingLines(sets: number, target: ExerciseTarget): SetLines {
@@ -72,6 +60,13 @@ export function getWorkingLines(sets: number, target: ExerciseTarget): SetLines 
 function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
+
+/** Weights a gym warmup can land on: a 3 lb rehab weight, then a plain 5 lb
+ * ladder — gym dumbbells jump in fives, so an in-between warmup like 27.5
+ * isn't something you can actually pick up. Run through the same 50-75% range
+ * search as owned equipment (pickWarmupWeight) rather than a flat rounding,
+ * so the result stays inside the range whenever a real weight does. */
+const GYM_WARMUP_WEIGHTS = [3, ...Array.from({ length: 60 }, (_, i) => (i + 1) * 5)];
 
 /** 50-75% of a working load (the midpoint, 62.5%, once it needs to collapse to
  * one number to round). Bodyweight (and a null load) has nothing to scale, so
@@ -95,7 +90,7 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym
   }
   if (load.kind === "freeWeight") {
     if (isGym) {
-      const lbs = Math.max(0, roundTo(load.lbs * 0.625, 2.5));
+      const lbs = pickWarmupWeight(load.lbs, GYM_WARMUP_WEIGHTS);
       return lbs > 0 ? { kind: "freeWeight", lbs } : { kind: "bodyweight" };
     }
     // Dumbbells vs. kettlebells only matters for how Equipment Settings tracks
@@ -110,14 +105,9 @@ export function computeWarmupLoad(load: Load | null, equipment: Equipment, isGym
     const strengths = pickWarmupLoopBand(load.strengths, catalog);
     return strengths.length > 0 ? { kind: "loopBand", strengths: strengths as LoopBandLoad["strengths"] } : { kind: "bodyweight" };
   }
-  // A direct resistance override (see BandLoad.overrideLbs) has no colors to
-  // search against — round the number itself instead of picking a combo.
-  if (load.overrideLbs != null) {
-    const lbs = Math.max(0, roundTo(load.overrideLbs * 0.625, 5));
-    return lbs > 0 ? { kind: "band", bands: [], overrideLbs: lbs } : { kind: "bodyweight" };
-  }
-  const catalog = isGym ? BAND_COLORS : equipment.ownedBands;
-  return { kind: "band", bands: pickWarmupBand(load.bands, catalog) };
+  // Tube bands come in 10 lb steps, so the warmup rounds to the nearest 10.
+  const lbs = Math.max(0, roundTo(load.lbs * 0.625, 10));
+  return lbs > 0 ? { kind: "band", lbs } : { kind: "bodyweight" };
 }
 
 /**

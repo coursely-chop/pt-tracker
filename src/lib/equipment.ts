@@ -7,40 +7,10 @@ export const DEFAULT_OWNED_KETTLEBELLS: number[] = [];
 export const DEFAULT_OWNED_LOOP_BANDS = ["light", "moderate", "strong"];
 
 /**
- * Resistance bands actually owned, and each one's equivalent weight in lbs.
- * This is a fixed property of the bands themselves, not a per-exercise guess —
- * combining bands sums their weights (see computeBandWeight).
- */
-export const BAND_WEIGHTS: Record<string, number> = {
-  yellow: 10,
-  blue: 20,
-  green: 30,
-  black: 40,
-  red: 50,
-};
-
-export const BAND_COLORS = Object.keys(BAND_WEIGHTS);
-
-/** Swatch colors for the band picker UI. "black" is a dark grey stand-in so
- * the circle stays visible against this app's dark background. */
-export const BAND_HEX: Record<string, string> = {
-  yellow: "#eab308",
-  green: "#22c55e",
-  blue: "#3b82f6",
-  black: "#52525b",
-  red: "#ef4444",
-};
-
-export function computeBandWeight(bands: string[]): number {
-  return bands.reduce((total, color) => total + (BAND_WEIGHTS[color] ?? 0), 0);
-}
-
-/**
  * Closed-loop bands (e.g. for lateral band walks) — a separate, smaller
- * catalog from the tube BAND_WEIGHTS above, and often worn multiple at once
- * (see computeLoopBandWeight). "strong" reuses the same dark-grey stand-in as
- * tube "black" — same reasoning: true black wouldn't read against this app's
- * background.
+ * catalog, and often worn multiple at once (see computeLoopBandWeight).
+ * "strong" is a dark-grey stand-in: true black wouldn't read against this
+ * app's background.
  */
 export const LOOP_BAND_STRENGTHS = ["light", "moderate", "strong"];
 
@@ -52,8 +22,7 @@ export const LOOP_BAND_HEX: Record<string, string> = {
 
 /** Loop bands have no real weight, only a relative ordering — this ordinal
  * rank (1/2/3) stands in for weight wherever combined strength needs to be
- * compared or summed (warmup range-search), the same role BAND_WEIGHTS plays
- * for tube bands, just not a physical lbs value. */
+ * compared or summed (warmup range-search) — not a physical lbs value. */
 const LOOP_BAND_RANK: Record<string, number> = { light: 1, moderate: 2, strong: 3 };
 
 export function computeLoopBandWeight(strengths: string[]): number {
@@ -86,7 +55,7 @@ export function pickWarmupWeight(workingLbs: number, owned: number[]): number {
 }
 
 /** Every combination of an owned set (including none, for the bodyweight-equivalent
- * case) — shared by pickWarmupBand and pickWarmupLoopBand to search for the best
+ * case) — used by pickWarmupLoopBand to search for the best
  * warmup combo the same way a working set's combo is chosen: by total resistance,
  * not by which specific colors/strengths. */
 function combinations(owned: string[]): string[][] {
@@ -94,7 +63,7 @@ function combinations(owned: string[]): string[][] {
 }
 
 /**
- * Shared core of pickWarmupBand/pickWarmupLoopBand: picks the combo of owned
+ * Picks the combo of owned
  * items whose combined weight (via weightFn) best targets 50-75% of the
  * working combo's weight. Prefers a combo actually in range (the heaviest
  * one, mirroring pickWarmupWeight), or the numerically closest one, tying
@@ -124,12 +93,8 @@ function pickWarmupCombo(workingWeight: number, owned: string[], weightFn: (comb
   }).combo;
 }
 
-export function pickWarmupBand(workingBands: string[], owned: string[]): string[] {
-  return pickWarmupCombo(computeBandWeight(workingBands), owned, computeBandWeight);
-}
-
-/** Loop-band equivalent of pickWarmupBand: same combo search, using ordinal
- * rank (computeLoopBandWeight) in place of real lbs. A working ["moderate"]
+/** Picks the loop-band combo to warm up with: a combo search by ordinal rank
+ * (computeLoopBandWeight), since loop bands have no real lbs. A working ["moderate"]
  * with all three owned resolves to ["light"] — one level lighter, matching
  * how the other warmup computations already work. */
 export function pickWarmupLoopBand(workingStrengths: string[], owned: string[]): string[] {

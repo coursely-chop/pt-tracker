@@ -161,6 +161,17 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
     setRightWarmupLoad(convertLoad(rightWarmupLoad, kind));
   }
 
+  // Same as Edit Mode: unchecking "Match Working" starts the independent
+  // warmup from the value the preview was showing, not from bodyweight.
+  function handleWarmupMatchChange(matches: boolean) {
+    if (!matches) {
+      setWarmupLoad(computeWarmupLoad(load, equipment, isGym));
+      setLeftWarmupLoad(computeWarmupLoad(leftLoad, equipment, isGym));
+      setRightWarmupLoad(computeWarmupLoad(rightLoad, equipment, isGym));
+    }
+    setWarmupMatchesWorking(matches);
+  }
+
   function handleCreate() {
     if (!canCreate) return;
 
@@ -259,7 +270,7 @@ function NewExerciseForm({ initialName, onCreate }: NewExerciseFormProps) {
               <input
                 type="checkbox"
                 checked={warmupMatchesWorking}
-                onChange={(e) => setWarmupMatchesWorking(e.target.checked)}
+                onChange={(e) => handleWarmupMatchChange(e.target.checked)}
               />
               Match Working (50-75%)
             </label>

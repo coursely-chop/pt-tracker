@@ -1,4 +1,3 @@
-import { computeBandWeight } from "./equipment";
 import type { Exercise, Load } from "../types";
 
 export interface HistoryPoint {
@@ -10,12 +9,7 @@ export interface HistoryPoint {
 
 function extractWeight(load: Load | null): number | null {
   if (!load) return null;
-  if (load.kind === "freeWeight" || load.kind === "machine") return load.lbs;
-  if (load.kind === "band") {
-    if (load.overrideLbs != null) return load.overrideLbs;
-    const weight = computeBandWeight(load.bands);
-    return weight > 0 ? weight : null;
-  }
+  if (load.kind === "freeWeight" || load.kind === "machine" || load.kind === "band") return load.lbs;
   return null; // bodyweight has no weight dimension to plot
 }
 

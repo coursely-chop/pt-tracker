@@ -1,20 +1,16 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { capitalize, computeWarmupLoad, localDateISO } from "../lib/format";
-import { BAND_COLORS, BAND_HEX, BAND_WEIGHTS, LOOP_BAND_HEX, LOOP_BAND_STRENGTHS, computeBandWeight } from "../lib/equipment";
+import { LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
 import { useData } from "../lib/DataContext";
-import type { BandLoad, ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget, WarmupOverride } from "../types";
+import type { ExerciseTarget, Load, LoopBandLoad, ProgressionEntry, SideTarget, WarmupOverride } from "../types";
 
 /** Read-only text for the "Match Working" preview — no band dots needed here,
  * unlike the glanceable views (Workout Overview, Movement Detail); a plain
  * label is enough for a value you can't currently touch. */
 export function formatLoadPreview(load: Load): string {
   if (load.kind === "bodyweight") return "Bodyweight";
-  if (load.kind === "freeWeight" || load.kind === "machine") return `${load.lbs} lbs`;
   if (load.kind === "loopBand") return load.strengths.map(capitalize).join(" & ") || "—";
-  if (load.overrideLbs != null) return `${load.overrideLbs} lbs`;
-  const weight = computeBandWeight(load.bands);
-  const label = load.bands.map(capitalize).join(" & ");
-  return weight > 0 ? `${label} (${weight} lbs)` : label || "—";
+  return `${load.lbs} lbs`;
 }
 
 export const LOAD_KINDS: { kind: Load["kind"]; label: string }[] = [
@@ -39,7 +35,7 @@ export function convertLoad(current: Load, kind: Load["kind"]): Load {
     case "machine":
       return { kind: "machine", lbs, increment: current.kind === "machine" ? current.increment : 10 };
     case "band":
-      return { kind: "band", bands: current.kind === "band" ? current.bands : [] };
+      return { kind: "band", lbs: "lbs" in current ? Math.max(BAND_STEP, roundToStep(current.lbs, BAND_STEP)) : 20 };
     case "loopBand":
       return { kind: "loopBand", strengths: current.kind === "loopBand" ? current.strengths : [] };
     case "bodyweight":
@@ -109,6 +105,11 @@ function buildMachineSequence(increment: number): number[] {
   for (let w = 0; w <= 500; w += increment) sequence.push(w);
   return sequence;
 }
+
+/** Tube bands step in tens — the resistance of the bands that exist, not an
+ * arbitrary increment. Capped well past anything wearable. */
+const BAND_STEP = 10;
+const BAND_SEQUENCE = Array.from({ length: 50 }, (_, i) => (i + 1) * BAND_STEP);
 
 function cloneLoad(load: Load): Load {
   return JSON.parse(JSON.stringify(load));
@@ -349,6 +350,21 @@ export default function EditModeSheet() {
     setWarmupOverrideRightLoad(convertLoad(warmupOverrideRightLoad, kind));
   }
 
+  // Unchecking "Match Working" starts the independent warmup from what the
+  // linked preview is showing right now — computed from the working values
+  // as they currently are in this sheet, not as they were when it opened —
+  // so it can be nudged with a tap. It used to keep whatever the override
+  // fields happened to hold, which for a freshly split or never-unlinked
+  // exercise was bodyweight.
+  function handleWarmupLinkedChange(linked: boolean) {
+    if (!linked) {
+      setWarmupOverrideLoad(computeWarmupLoad(load, equipment, editingExerciseIsGym));
+      setWarmupOverrideLeftLoad(computeWarmupLoad(leftLoad, equipment, editingExerciseIsGym));
+      setWarmupOverrideRightLoad(computeWarmupLoad(rightLoad, equipment, editingExerciseIsGym));
+    }
+    setWarmupLinked(linked);
+  }
+
   function handleAsymmetricToggle(checked: boolean) {
     if (checked) {
       if (exercise!.targets[bucket].sides == null) {
@@ -357,8 +373,11 @@ export default function EditModeSheet() {
         setRightLoad(cloneLoad(load));
         setLeftReps(reps);
         setRightReps(reps);
+        setWarmupOverrideLeftLoad(cloneLoad(warmupOverrideLoad));
+        setWarmupOverrideRightLoad(cloneLoad(warmupOverrideLoad));
       }
     } else {
+      setWarmupOverrideLoad(cloneLoad(warmupOverrideLeftLoad));
       // Collapsing back to one combined value: the combined state (`load`/`reps`)
       // is never populated for an exercise that started asymmetric (the initial
       // effect only fills left/right), so carry the left side forward instead of
@@ -466,7 +485,7 @@ export default function EditModeSheet() {
                     <input
                       type="checkbox"
                       checked={warmupLinked}
-                      onChange={(e) => setWarmupLinked(e.target.checked)}
+                      onChange={(e) => handleWarmupLinkedChange(e.target.checked)}
                     />
                     Match Working (50-75%)
                   </label>
@@ -688,59 +707,12 @@ export function LoadEditor({ load, setLoad }: { load: Load; setLoad: (l: Load) =
     );
   }
 
-  const bandLoad = load as BandLoad;
-  const toggleBand = (color: string) => {
-    const bands = bandLoad.bands.includes(color)
-      ? bandLoad.bands.filter((b) => b !== color)
-      : [...bandLoad.bands, color];
-    setLoad({ ...bandLoad, bands });
-  };
-  const weight = computeBandWeight(bandLoad.bands);
-  const usingOverride = bandLoad.overrideLbs != null;
-
+  // Tube bands: resistance only, in 10 lb steps. The sequence (rather than
+  // plain ±10 arithmetic) means an older off-grid value like 65 just snaps to
+  // the nearest step on the first tap instead of being stranded between them.
   return (
     <div className="load-editor">
-      {usingOverride ? (
-        <Stepper
-          value={bandLoad.overrideLbs ?? 0}
-          unit="lbs"
-          step={5}
-          onChange={(v) => setLoad({ ...bandLoad, overrideLbs: v })}
-        />
-      ) : (
-        <div className="band-picker">
-          {BAND_COLORS.map((color) => {
-            const selected = bandLoad.bands.includes(color);
-            return (
-              <button
-                key={color}
-                type="button"
-                className={`band-swatch${selected ? " selected" : ""}`}
-                style={{ backgroundColor: BAND_HEX[color] }}
-                onClick={() => toggleBand(color)}
-                aria-pressed={selected}
-                aria-label={`${color} band, ${BAND_WEIGHTS[color]} lbs`}
-                title={`${color} — ${BAND_WEIGHTS[color]} lbs`}
-              />
-            );
-          })}
-          <div className="band-weight">{weight > 0 ? `${weight} lbs` : "—"}</div>
-        </div>
-      )}
-      {/* For a band set that doesn't match this app's own color catalog — a
-          trainer's or gym's bands — entering the total directly skips the
-          color lookup entirely rather than forcing a guess at which of this
-          app's five colors it's "closest to." */}
-      <label className="toggle-row toggle-row-inline load-editor-restrict">
-        <input
-          type="checkbox"
-          checked={usingOverride}
-          onChange={(e) =>
-            setLoad({ ...bandLoad, overrideLbs: e.target.checked ? weight || 20 : undefined })
-          }
-        />
-        Enter total resistance directly
-      </label>
+      <Stepper value={load.lbs} unit="lbs" step={BAND_STEP} sequence={BAND_SEQUENCE} onChange={(lbs) => setLoad({ kind: "band", lbs })} />
     </div>
   );
 }
