@@ -34,6 +34,7 @@ The root screen (`/`) — a hero banner directly above the workout list, both on
   - An empty tab (e.g. no Gym Workouts created yet) shows a plain "No {home/gym} workouts yet — tap + to create one" hint rather than a blank list.
 - FAB (+) → Create New Workout, tagged with whichever tab is currently active (see [§9](#9-create-new-home-workout), [§12](#12-gym-workouts)).
 - A settings icon (gear) is fixed at the bottom-left of the screen (mirroring the FAB's fixed bottom-right) → Settings (§11). Previously an equipment-only icon floated over the top-right corner of the hero photo; moved and renamed once Equipment became one section of a broader Settings screen rather than its own destination.
+- A **Progress** icon (a trend arrow) sits right next to the gear → the Progress screen (§7a), carrying the active tab with it.
 - Tap a workout → Workout Overview.
 
 ### 3. Workout Overview
@@ -119,6 +120,16 @@ Originally this kind couldn't be changed at all after an exercise was first crea
 - Asymmetric exercises (left/right progression entries) get two separate lines, color-coded, with a small legend — not one line blending two different loads together.
 - Fewer than 2 plottable points: no chart (a single point or a line to nowhere isn't a "trend") — a plain-text message showing that one data point instead, or "no history yet" for zero.
 - Nav back to Movement Detail and to Workout Overview.
+
+### 7a. Progress
+
+The overview to History's one-exercise-at-a-time chart: **every exercise's weight trend on one screen**, reached from the Progress icon on the Home Screen (`/progress`). A Home / Gym toggle at the top (it starts on whichever tab you were on, and the choice is remembered the same way) — the two are independent timelines, so an exercise only appears under a venue it actually has history in, and the same exercise shows different numbers under each.
+
+- **One card per exercise,** most recently changed first: its icon, name, and a small **sparkline** (weight over time, no axes) on the right. Under the name, the latest weight × reps with the change since the first recorded weight ("**45 lbs × 15 · +25 lbs**", always signed so a drop can't be mistaken for a gain), and a muted "since Sep 22" (the year only appears when it isn't this year).
+- **Left/right exercises** get one line each, the L and R tinted to match their line colors (green / pink, same as History), and both lines share one scale so they stay comparable. An exercise whose history mixes combined and split entries shows each series it actually has, rather than hiding the older one.
+- **One entry only:** no line is drawn (a single point isn't a trend) — just the latest value and "Only one entry so far (date)". An exercise with no plottable entries for the venue (bodyweight, or never changed) isn't listed; an empty venue reads "Nothing to chart yet for Gym workouts."
+- **Tapping a card opens that exercise's full History** (§7), via a workout of the same kind that contains it, so it opens on the right venue's timeline.
+- Computed from the same progression log and `getHistoryData()` as History (`lib/progress.ts`) — no separate stored summary to drift out of sync.
 
 ### 8. Log Workout (completion)
 

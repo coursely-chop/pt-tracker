@@ -4,6 +4,7 @@ import { DataProvider } from "./lib/DataContext";
 import History from "./screens/History";
 import HomeWorkoutList from "./screens/HomeWorkoutList";
 import MovementDetail from "./screens/MovementDetail";
+import Progress from "./screens/Progress";
 import Settings from "./screens/Settings";
 import WorkoutBuilder from "./screens/WorkoutBuilder";
 import WorkoutOverview from "./screens/WorkoutOverview";
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeWorkoutList />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/progress" element={<Progress />} />
         <Route path="/workouts/new" element={<WorkoutBuilder />} />
         <Route path="/workouts/:workoutId/edit" element={<WorkoutEditRoute />} />
         <Route path="/workouts/:workoutId" element={<WorkoutOverview />} />
