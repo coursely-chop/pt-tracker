@@ -131,22 +131,26 @@ export default function WorkoutBuilder() {
     setSupersets(next);
   }
 
-  function addSlot(supersetKey: string, exerciseId: string) {
-    setSupersets(
-      supersets.map((s) =>
-        s.key === supersetKey ? { ...s, slots: [...s.slots, { key: newKey(), exerciseIds: [exerciseId] }] } : s
+  // Functional updates throughout: the picker can hand back several
+  // exercises at once, and building each from the same stale `supersets`
+  // snapshot would keep only the last one.
+  function addSlots(supersetKey: string, exerciseIds: string[]) {
+    setSupersets((current) =>
+      current.map((s) =>
+        s.key === supersetKey
+          ? { ...s, slots: [...s.slots, ...exerciseIds.map((id) => ({ key: newKey(), exerciseIds: [id] }))] }
+          : s
       )
     );
   }
-
-  function addAlternate(supersetKey: string, slotKey: string, exerciseId: string) {
-    setSupersets(
-      supersets.map((s) =>
+  function addAlternates(supersetKey: string, slotKey: string, exerciseIds: string[]) {
+    setSupersets((current) =>
+      current.map((s) =>
         s.key === supersetKey
           ? {
               ...s,
               slots: s.slots.map((sl) =>
-                sl.key === slotKey ? { ...sl, exerciseIds: [...sl.exerciseIds, exerciseId] } : sl
+                sl.key === slotKey ? { ...sl, exerciseIds: [...sl.exerciseIds, ...exerciseIds] } : sl
               ),
             }
           : s
@@ -471,7 +475,7 @@ export default function WorkoutBuilder() {
         <GymModeContext.Provider value={workoutType === "gym"}>
           <ExercisePickerSheet
             onClose={() => setPickerForSuperset(null)}
-            onSelect={(exerciseId) => addSlot(pickerForSuperset, exerciseId)}
+            onSelect={(exerciseIds) => addSlots(pickerForSuperset, exerciseIds)}
             excludeExerciseIds={workoutExerciseIds(supersets)}
           />
         </GymModeContext.Provider>
@@ -481,8 +485,8 @@ export default function WorkoutBuilder() {
         <GymModeContext.Provider value={workoutType === "gym"}>
           <ExercisePickerSheet
             onClose={() => setPickerForAlternate(null)}
-            onSelect={(exerciseId) =>
-              addAlternate(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseId)
+            onSelect={(exerciseIds) =>
+              addAlternates(pickerForAlternate.supersetKey, pickerForAlternate.slotKey, exerciseIds)
             }
             excludeExerciseIds={workoutExerciseIds(supersets)}
           />

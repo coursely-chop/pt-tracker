@@ -1523,16 +1523,10 @@ body {
   margin-bottom: 12px;
 }
 
-.picker-no-match {
-  padding-top: 4px;
-}
-
-.picker-no-match .empty-state {
-  padding-bottom: 12px;
-}
-
 .picker-list-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   text-align: left;
   padding: 10px 4px;
@@ -1540,11 +1534,16 @@ body {
   border-bottom: 1px solid var(--border);
   background: none;
   color: var(--text);
+  font: inherit;
   cursor: pointer;
 }
 
 .picker-list-item:hover {
   background: rgba(255, 255, 255, 0.04);
+}
+
+.picker-list-item.selected {
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
 }
 
 .picker-list-item:disabled {
@@ -1556,6 +1555,57 @@ body {
   background: none;
 }
 
+.picker-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bg);
+}
+
+.picker-list-item.selected .picker-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.picker-item-text {
+  min-width: 0;
+}
+
+.picker-empty {
+  padding: 12px 4px 4px;
+}
+
+.picker-create-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 4px;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.picker-footer {
+  flex: none;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.picker-footer .save-btn {
+  margin-top: 0;
+}
+
 .picker-item-name {
   font-size: 15px;
   font-weight: 600;
@@ -1565,12 +1615,6 @@ body {
   color: var(--text-muted);
   font-size: 12px;
   margin-top: 2px;
-}
-
-.picker-create-btn {
-  width: auto;
-  flex: 1;
-  margin-top: 0;
 }
 
 /* Create New Home Workout */
