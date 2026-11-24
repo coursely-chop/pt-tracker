@@ -15,7 +15,7 @@ export default function Settings() {
   return (
     <div className="screen">
       <Link to="/" className="back-link">
-        ← Home Workouts
+        ← Workouts
       </Link>
       <h1 className="screen-title">Settings</h1>
 

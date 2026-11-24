@@ -1478,6 +1478,10 @@ body {
   margin-bottom: 12px;
 }
 
+.kind-select {
+  margin-bottom: 12px;
+}
+
 .kind-picker-btn {
   flex: 1;
   padding: 8px 4px;

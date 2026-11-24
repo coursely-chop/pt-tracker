@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { completedTodayAt, formatTimeOfDay, lastCompletedAt, lastCompletedDate } from "../lib/completions";
 import { formatDate } from "../lib/format";
+import { initialHomeTab, rememberHomeTab } from "../lib/homeTab";
 import { useData } from "../lib/DataContext";
 import type { Workout } from "../types";
 import kettlebellIllustration from "../assets/happy-kettlebell.svg";
@@ -16,10 +17,12 @@ function getGreeting(): string {
 export default function HomeWorkoutList() {
   const { workouts, completions, profile } = useData();
   const listRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<Workout["type"]>("home");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Workout["type"]>(() => initialHomeTab(searchParams.get("tab")));
 
   function selectTab(tab: Workout["type"]) {
     setActiveTab(tab);
+    rememberHomeTab(tab);
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

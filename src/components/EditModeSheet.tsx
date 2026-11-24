@@ -64,18 +64,18 @@ export function LoadKindPicker({
   onSelect: (kind: Load["kind"]) => void;
 }) {
   return (
-    <div className="kind-picker">
+    <select
+      className="detail-input kind-select"
+      value={selectedKind}
+      onChange={(e) => onSelect(e.target.value as Load["kind"])}
+      aria-label="Resistance type"
+    >
       {LOAD_KINDS.map(({ kind, label }) => (
-        <button
-          key={kind}
-          type="button"
-          className={`kind-picker-btn${selectedKind === kind ? " selected" : ""}`}
-          onClick={() => onSelect(kind)}
-        >
+        <option key={kind} value={kind}>
           {label}
-        </button>
+        </option>
       ))}
-    </div>
+    </select>
   );
 }
 
@@ -382,7 +382,7 @@ export default function EditModeSheet() {
         left: { load: leftLoad, reps: leftReps, tempo: leftTempo } as SideTarget,
         right: { load: rightLoad, reps: rightReps, tempo: rightTempo } as SideTarget,
       };
-      newTarget = { ...exercise.targets[bucket], reps: null, load: null, sides };
+      newTarget = { ...exercise.targets[bucket], perSide: true, reps: null, load: null, sides };
       entries.push({ date, load: leftLoad, reps: leftReps, note: null, side: "left", venue: bucket });
       entries.push({ date, load: rightLoad, reps: rightReps, note: null, side: "right", venue: bucket });
     } else {
@@ -406,7 +406,6 @@ export default function EditModeSheet() {
     closeEditMode();
   }
 
-  const canSplitSides = exercise.targets[bucket].perSide;
 
   if (confirmingDiscard) {
     return (
@@ -508,16 +507,14 @@ export default function EditModeSheet() {
           <div className="edit-mode-section">
             <div className="slider-label">Working</div>
   
-            {canSplitSides && (
-              <label className="toggle-row">
-                <input
-                  type="checkbox"
-                  checked={asymmetric}
-                  onChange={(e) => handleAsymmetricToggle(e.target.checked)}
-                />
-                Left &amp; Right differ
-              </label>
-            )}
+            <label className="toggle-row">
+              <input
+                type="checkbox"
+                checked={asymmetric}
+                onChange={(e) => handleAsymmetricToggle(e.target.checked)}
+              />
+              Left &amp; Right differ
+            </label>
   
             {asymmetric ? (
               <div className="sides-editor">

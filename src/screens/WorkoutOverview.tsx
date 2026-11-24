@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { SetLinesLabel, SetLinesRows } from "../components/SetLines";
 import { formatDate, getWarmupLines, getWorkingLines, localDateISO, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";
+import { homePath } from "../lib/homeTab";
 
 export default function WorkoutOverview() {
   const { workoutId } = useParams<{ workoutId: string }>();
@@ -29,7 +30,7 @@ export default function WorkoutOverview() {
   function handleConfirmLog(date?: string) {
     if (!workout) return;
     logWorkout(workout.id, date);
-    navigate("/");
+    navigate(homePath(workout.type));
   }
 
   function cancelLogging() {
@@ -39,7 +40,7 @@ export default function WorkoutOverview() {
 
   return (
     <div className="screen">
-      <Link to="/" className="back-link">
+      <Link to={homePath(workout.type)} className="back-link">
         ← {workout.type === "gym" ? "Gym Workouts" : "Home Workouts"}
       </Link>
       <div className="movement-header">

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import ExercisePickerSheet from "../components/ExercisePickerSheet";
 import { GymModeContext, Stepper } from "../components/EditModeSheet";
 import { useData } from "../lib/DataContext";
+import { homePath } from "../lib/homeTab";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
 
 interface BuilderSlot {
@@ -209,14 +210,14 @@ export default function WorkoutBuilder() {
       navigate(`/workouts/${workoutId}`);
     } else {
       createWorkout(input);
-      navigate("/");
+      navigate(homePath(workoutType));
     }
   }
 
   function handleDelete() {
     if (!workoutId) return;
     deleteWorkout(workoutId);
-    navigate("/");
+    navigate(homePath(workoutType));
   }
 
   // Non-destructive, so no confirm step (unlike Delete) — straight to editing
@@ -227,7 +228,7 @@ export default function WorkoutBuilder() {
     if (clone) navigate(`/workouts/${clone.id}/edit`, { state: { clonedWorkoutName: clone.name } });
   }
 
-  const backTo = isEditing && workoutId ? `/workouts/${workoutId}` : "/";
+  const backTo = isEditing && workoutId ? `/workouts/${workoutId}` : homePath(workoutType);
   const backLabel = isEditing && existingWorkout ? `← ${existingWorkout.name}` : `← ${workoutTypeLabel} Workouts`;
 
   return (
