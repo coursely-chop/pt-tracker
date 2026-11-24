@@ -34,7 +34,6 @@ export default function MovementDetail() {
     getExercise,
     getWorkout,
     openEditMode,
-    openEditDetails,
     notes,
     addNote,
     updateNoteText,
@@ -223,22 +222,6 @@ export default function MovementDetail() {
           </div>
         </div>
 
-        {(exercise.links.instructional || exercise.links.video) && (
-          <details className="media-section">
-            <summary>Media &amp; links</summary>
-            {exercise.links.instructional && (
-              <a href={exercise.links.instructional} target="_blank" rel="noreferrer">
-                Instructional article
-              </a>
-            )}
-            {exercise.links.video && (
-              <a href={exercise.links.video} target="_blank" rel="noreferrer">
-                Video
-              </a>
-            )}
-          </details>
-        )}
-
         {warmupLines ? (
           <button
             type="button"
@@ -283,26 +266,6 @@ export default function MovementDetail() {
             </div>
           )}
         </button>
-
-        {exercise.asymmetryNote && <div className="note-callout">{exercise.asymmetryNote}</div>}
-
-        {exercise.cues.length > 0 && (
-          <div className="detail-section">
-            <div className="detail-section-label">Form Cues</div>
-            <ul>
-              {exercise.cues.map((cue, i) => (
-                <li key={i}>{cue}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {exercise.progressionRule && (
-          <div className="detail-section">
-            <div className="detail-section-label">Progression</div>
-            <div>{exercise.progressionRule}</div>
-          </div>
-        )}
 
         <div className="detail-section">
           <div className="detail-section-label">Notes</div>
@@ -446,14 +409,6 @@ export default function MovementDetail() {
             View History
           </Link>
         </div>
-        <button
-          type="button"
-          className="history-link"
-          disabled={noteEditorOpen}
-          onClick={() => openEditDetails(exercise.id)}
-        >
-          Edit Details
-        </button>
       </div>
     </div>
   );

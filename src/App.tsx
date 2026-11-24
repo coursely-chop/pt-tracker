@@ -1,6 +1,5 @@
 import { Route, Routes, useParams } from "react-router-dom";
-import EditDetailsSheet from "./components/EditDetailsSheet";
-import EditModeSheet from "./components/EditModeSheet";
+import { EditExerciseHost } from "./components/ExerciseSheet";
 import { DataProvider } from "./lib/DataContext";
 import History from "./screens/History";
 import HomeWorkoutList from "./screens/HomeWorkoutList";
@@ -16,8 +15,8 @@ import WorkoutOverview from "./screens/WorkoutOverview";
  * initializers that only run once, so it'd keep showing the *previous*
  * workout's name/supersets/protocol under the new URL. Keying by workoutId
  * forces a real remount instead of needing every one of those initializers
- * rewritten as an effect keyed on it, the way EditModeSheet's single
- * long-lived instance already has to. */
+ * rewritten as an effect keyed on it, the way a single long-lived
+ * component would have to. */
 function WorkoutEditRoute() {
   const { workoutId } = useParams<{ workoutId: string }>();
   return <WorkoutBuilder key={workoutId} />;
@@ -35,8 +34,7 @@ export default function App() {
         <Route path="/workouts/:workoutId/exercises/:exerciseId" element={<MovementDetail />} />
         <Route path="/workouts/:workoutId/exercises/:exerciseId/history" element={<History />} />
       </Routes>
-      <EditModeSheet />
-      <EditDetailsSheet />
+      <EditExerciseHost />
     </DataProvider>
   );
 }

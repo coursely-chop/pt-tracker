@@ -21,7 +21,6 @@ import { slugify } from "./slug";
 import type {
   Equipment,
   Exercise,
-  ExerciseLinks,
   ExerciseTarget,
   Note,
   ProgressionEntry,
@@ -34,12 +33,16 @@ import type {
   WorkoutProtocol,
 } from "../types";
 
-export interface ExerciseDetailsUpdate {
+/** Everything the exercise sheet saves in one go: the (shared) name, plus the
+ * working target and warmup for whichever venue it was opened from. `entries`
+ * is the history to append — empty when nothing about the weights/reps
+ * actually changed. */
+export interface ExerciseUpdate {
   name: string;
-  progressionRule: string | null;
-  cues: string[];
-  tags: string[];
-  links: ExerciseLinks;
+  target: ExerciseTarget;
+  entries: ProgressionEntry[];
+  warmupLoad: WarmupOverride;
+  warmupReps: Exercise["warmupReps"];
 }
 
 export interface NewExerciseInput {
@@ -75,15 +78,7 @@ interface DataContextValue {
   profile: Profile;
   getExercise: (id: string) => Exercise | undefined;
   getWorkout: (id: string) => Workout | undefined;
-  updateExerciseTarget: (
-    exerciseId: string,
-    isGym: boolean,
-    newTarget: ExerciseTarget,
-    newEntries: ProgressionEntry[],
-    warmupLoad: WarmupOverride,
-    warmupReps: Exercise["warmupReps"]
-  ) => void;
-  updateExerciseDetails: (exerciseId: string, updates: ExerciseDetailsUpdate) => void;
+  updateExercise: (exerciseId: string, isGym: boolean, update: ExerciseUpdate) => void;
   createExercise: (input: NewExerciseInput) => string;
   createWorkout: (input: NewWorkoutInput) => string;
   updateWorkout: (workoutId: string, input: NewWorkoutInput) => void;
@@ -110,9 +105,6 @@ interface DataContextValue {
   editingExerciseIsGym: boolean;
   openEditMode: (exerciseId: string, isGymWorkout?: boolean) => void;
   closeEditMode: () => void;
-  editingDetailsExerciseId: string | null;
-  openEditDetails: (exerciseId: string) => void;
-  closeEditDetails: () => void;
   addOwnedDumbbell: (lbs: number) => void;
   removeOwnedDumbbell: (lbs: number) => void;
   addOwnedKettlebell: (lbs: number) => void;
@@ -128,7 +120,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<SeedData>(() => loadData());
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
   const [editingExerciseIsGym, setEditingExerciseIsGym] = useState(false);
-  const [editingDetailsExerciseId, setEditingDetailsExerciseId] = useState<string | null>(null);
 
   function openEditMode(exerciseId: string, isGymWorkout = false) {
     setEditingExerciseIsGym(isGymWorkout);
@@ -173,14 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const getExercise = (id: string) => data.exercises.find((e) => e.id === id);
   const getWorkout = (id: string) => data.workouts.find((w) => w.id === id);
 
-  function updateExerciseTarget(
-    exerciseId: string,
-    isGym: boolean,
-    newTarget: ExerciseTarget,
-    newEntries: ProgressionEntry[],
-    warmupLoad: WarmupOverride,
-    warmupReps: Exercise["warmupReps"]
-  ) {
+  function updateExercise(exerciseId: string, isGym: boolean, update: ExerciseUpdate) {
     const exercise = data.exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
     const bucket = isGym ? "gym" : "home";
@@ -190,24 +174,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // are deliberate and always kept.
     const superseded = (p: ProgressionEntry) =>
       p.note === null &&
-      newEntries.some((n) => n.date === p.date && n.side === p.side && (n.venue ?? "home") === (p.venue ?? "home"));
+      update.entries.some((n) => n.date === p.date && n.side === p.side && (n.venue ?? "home") === (p.venue ?? "home"));
     const updated: Exercise = {
       ...exercise,
-      targets: { ...exercise.targets, [bucket]: newTarget },
-      progression: [...exercise.progression.filter((p) => !superseded(p)), ...newEntries],
-      warmupLoads: { ...exercise.warmupLoads, [bucket]: warmupLoad },
-      warmupReps,
+      name: update.name,
+      targets: { ...exercise.targets, [bucket]: update.target },
+      progression: [...exercise.progression.filter((p) => !superseded(p)), ...update.entries],
+      warmupLoads: { ...exercise.warmupLoads, [bucket]: update.warmupLoad },
+      warmupReps: update.warmupReps,
     };
-    setData(saveExercise(updated));
-  }
-
-  // Deliberately separate from updateExerciseTarget: this never touches
-  // target or progression[], so editing a cue can never generate a
-  // progression entry the way an actual reps/weight change does.
-  function updateExerciseDetails(exerciseId: string, updates: ExerciseDetailsUpdate) {
-    const exercise = data.exercises.find((e) => e.id === exerciseId);
-    if (!exercise) return;
-    const updated: Exercise = { ...exercise, ...updates };
     setData(saveExercise(updated));
   }
 
@@ -219,7 +194,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { target } = input;
     // New exercises start with a warmup on by default (matching the same rep
     // count as working) rather than none — "no warmup" is something you opt
-    // out of via Edit Details, not the default for something never reviewed.
+    // out of in the exercise sheet, not the default for something never reviewed.
     const defaultWarmupReps =
       target.perSide && target.sides
         ? Math.min(target.sides.left.reps, target.sides.right.reps)
@@ -276,7 +251,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       name,
       data.workouts.map((w) => w.id)
     );
-    // Deep-copy via a JSON round-trip (same approach as EditModeSheet's
+    // Deep-copy via a JSON round-trip (same approach as LoadControls'
     // cloneLoad) so editing the clone's supersets/slots later can't mutate
     // the original through a shared nested array/object reference.
     const clone: Workout = { ...JSON.parse(JSON.stringify(original)), id, name };
@@ -374,8 +349,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     profile: data.profile,
     getExercise,
     getWorkout,
-    updateExerciseTarget,
-    updateExerciseDetails,
+    updateExercise,
     createExercise,
     createWorkout,
     updateWorkout,
@@ -390,9 +364,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     editingExerciseIsGym,
     openEditMode,
     closeEditMode: () => setEditingExerciseId(null),
-    editingDetailsExerciseId,
-    openEditDetails: setEditingDetailsExerciseId,
-    closeEditDetails: () => setEditingDetailsExerciseId(null),
     addOwnedDumbbell,
     removeOwnedDumbbell,
     addOwnedKettlebell,

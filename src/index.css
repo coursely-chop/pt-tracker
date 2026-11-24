@@ -748,6 +748,19 @@ body {
   margin: 0;
 }
 
+.sheet-header .sheet-name-input {
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sheet-scope-hint {
+  margin: -8px 0 16px;
+}
+
 .sheet-close {
   background: none;
   border: none;

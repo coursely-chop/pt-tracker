@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { Stepper, buildWeightSequence } from "../components/EditModeSheet";
+import { Stepper, buildWeightSequence } from "../components/LoadControls";
 import { LOOP_BAND_HEX, LOOP_BAND_STRENGTHS } from "../lib/equipment";
 import { capitalize, todayISO } from "../lib/format";
 import { useData } from "../lib/DataContext";

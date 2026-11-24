@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ExercisePickerSheet from "../components/ExercisePickerSheet";
-import { GymModeContext, Stepper } from "../components/EditModeSheet";
+import { GymModeContext, Stepper } from "../components/LoadControls";
 import { useData } from "../lib/DataContext";
 import { homePath } from "../lib/homeTab";
 import type { Superset, Workout, WorkoutProtocol } from "../types";
